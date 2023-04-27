@@ -1,6 +1,8 @@
 [package]
 name = "kak-tree-sitter"
-version = "0.1.0"
+description = "kakoune tree-sitter server"
+license = "CC0-1.0"
+version = "0.0.0"
 edition = "2021"
 
 [dependencies]
