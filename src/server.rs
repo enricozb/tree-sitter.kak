@@ -1,6 +1,9 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+  collections::{hash_map::Entry, HashMap},
+  path::PathBuf,
+};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use daemonize::Daemonize;
 use tempfile::TempDir;
 
@@ -58,28 +61,31 @@ impl Server {
   /// Runs the server.
   fn run(&mut self) -> Result<()> {
     loop {
-      let (mut connection, request) = match self.requests.listen() {
-        Ok(ok) => ok,
-        Err(err) => {
-          println!("failed to read request: {err}");
-          continue;
-        }
-      };
+      let (mut connection, request) = self.requests.listen().context("listen")?;
 
-      match request {
-        Request::SaveBuffer { buffer } => {
-          self.save_buffer(&mut connection, &buffer)?;
-        }
-
-        Request::SetLanguage { buffer, language } => {
-          self.set_buffer_language(buffer, language)?;
-        }
-
-        Request::Parse { buffer } => {
-          self.parse_buffer(buffer)?;
-        }
+      if let Err(err) = self.handle_request(&mut connection, request) {
+        connection.log_error(&format!("{err}")).context("log_error")?;
       }
     }
+  }
+
+  /// Handle a single request
+  fn handle_request(&mut self, connection: &mut Connection, request: Request) -> Result<()> {
+    match request {
+      Request::SaveBuffer { buffer } => {
+        self.save_buffer(connection, &buffer)?;
+      }
+
+      Request::SetLanguage { buffer, language } => {
+        self.set_buffer_language(buffer, language)?;
+      }
+
+      Request::Parse { buffer } => {
+        self.parse_buffer(buffer)?;
+      }
+    }
+
+    Ok(())
   }
 
   /// Saves a buffer to disk.
@@ -92,7 +98,7 @@ impl Server {
   /// Sets a buffer's language.
   fn set_buffer_language(&mut self, buffer: String, language: String) -> Result<()> {
     let content_file = self.kakoune.content_file(&buffer)?;
-    let parser = self.get_parser(language.clone());
+    let parser = self.get_parser(language.clone())?;
     let tree = parser.parse_file(&content_file)?;
 
     self.buffers.insert(buffer, Buffer::new(language, tree));
@@ -103,10 +109,12 @@ impl Server {
   /// Updates the buffer's syntax tree.
   fn parse_buffer(&mut self, buffer: String) -> Result<()> {
     // TODO(enricozb): can we do this without removing the entry?
+    // We can by getting a mutable reference to self.parsers, and
+    // doing something like Self::get_parser(&mut self.parsers).
     let mut buf = self.buffers.remove(&buffer).ok_or(anyhow!("unknown buffer {buffer}"))?;
 
     let content_file = self.kakoune.content_file(&buffer)?;
-    buf.tree = self.get_parser(buf.language.clone()).parse_file(&content_file)?;
+    buf.tree = self.get_parser(buf.language.clone())?.parse_file(&content_file)?;
 
     self.buffers.insert(buffer, buf);
 
@@ -114,11 +122,13 @@ impl Server {
   }
 
   /// Returns the parser for the provided language, creating one if needed.
-  fn get_parser(&mut self, language: String) -> &mut Parser {
-    self
-      .parsers
-      .entry(language)
-      .or_insert_with_key(|language| Parser::new(language).expect("new parser"))
+  fn get_parser(&mut self, language: String) -> Result<&mut Parser> {
+    let parser = match self.parsers.entry(language.clone()) {
+      Entry::Occupied(o) => o.into_mut(),
+      Entry::Vacant(v) => v.insert(Parser::new(&language).context("new parser")?),
+    };
+
+    Ok(parser)
   }
 
   // TODO(enricozb): re-implement highlighting

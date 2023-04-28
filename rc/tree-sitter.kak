@@ -41,23 +41,23 @@ define-command -override -hidden tree-sitter-request -docstring "send request to
 }
 
 define-command -override -hidden tree-sitter-save -docstring "save buffer" %{
-  tree-sitter-request evaluate-commands "{
-    ""type"": ""save_buffer"",
-    ""buffer"": ""%val{bufname}""
-  }"
+  tree-sitter-request evaluate-commands "
+    type   = 'save_buffer'
+    buffer = '%val{bufname}'
+  "
 }
 
 define-command -override -hidden tree-sitter-set-language -docstring "set language" %{
-  tree-sitter-request nop "{
-    ""type"": ""set_language"",
-    ""buffer"": ""%val{bufname}"",
-    ""language"": ""%opt{filetype}""
-  }"
+  tree-sitter-request nop "
+    type     = 'set_language'
+    buffer   = '%val{bufname}'
+    language = '%opt{filetype}'
+  "
 }
 
 define-command -override -hidden tree-sitter-parse -docstring "set language" %{
-  tree-sitter-request nop "{
-    ""type"": ""parse"",
-    ""buffer"": ""%val{bufname}""
-  }"
+  tree-sitter-request nop "
+    type   = 'parse'
+    buffer = '%val{bufname}'
+  "
 }

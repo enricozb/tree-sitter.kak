@@ -17,4 +17,11 @@ impl Connection {
 
     Ok(())
   }
+
+  /// Log an error to the kakoune instance.
+  pub fn log_error(&mut self, message: &str) -> Result<()> {
+    writeln!(self.0, "evaluate-commands %[ echo -debug %( {message} ) ]")?;
+
+    Ok(())
+  }
 }

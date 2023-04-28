@@ -42,6 +42,6 @@ impl Reader {
 
     println!("request: {data}");
 
-    Ok((Connection::new(stream), serde_json::from_str(&data)?))
+    Ok((Connection::new(stream), toml::from_str(&data)?))
   }
 }
