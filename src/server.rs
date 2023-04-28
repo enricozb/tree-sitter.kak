@@ -1,6 +1,7 @@
-use std::{collections::HashMap, thread};
+use std::{collections::HashMap, path::PathBuf, thread};
 
 use anyhow::{anyhow, Result};
+use daemonize::Daemonize;
 use tempfile::TempDir;
 
 use crate::{
@@ -34,14 +35,24 @@ impl Server {
   /// Creates a new `Server`.
   fn new(args: &Args) -> Result<Self> {
     let tempdir = tempfile::tempdir()?;
+    let socket = tempdir.path().join("socket");
+
+    println!("{}", socket.to_str().ok_or(anyhow!("non-unicode socket path"))?);
 
     Ok(Self {
-      requests: RequestReader::new(&tempdir.path().join("socket"))?,
+      requests: RequestReader::new(&socket)?,
       kakoune: Kakoune::new(args.session_id, tempdir.path().join("buffers"))?,
       parsers: HashMap::new(),
       buffers: HashMap::new(),
       tempdir,
     })
+  }
+
+  /// The path to the pid file.
+  ///
+  /// This will only exist when the server is daemonized.
+  fn pid_file(&self) -> PathBuf {
+    self.tempdir.path().join("pid")
   }
 
   /// Runs the server.
@@ -135,10 +146,11 @@ pub fn start(args: &Args) -> Result<()> {
   let mut server = Server::new(args)?;
 
   if args.daemonize {
-    thread::spawn(move || server.run().expect("run"));
-  } else {
-    server.run()?;
+    let daemon = Daemonize::new().pid_file(server.pid_file());
+    daemon.start()?;
   }
+
+  server.run()?;
 
   Ok(())
 }

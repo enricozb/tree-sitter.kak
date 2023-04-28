@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"] }
+daemonize = "0.5.0"
 serde_json = "1.0.96"
 serde = { version = "1.0.160", features = ["derive"] }
 tempfile = "3.5.0"

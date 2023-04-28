@@ -27,8 +27,6 @@ pub struct Reader {
 impl Reader {
   /// Creates a new `Reader`.
   pub fn new(socket_path: &Path) -> Result<Self> {
-    println!("listening on: {socket_path:?}");
-
     Ok(Self {
       socket: UnixListener::bind(socket_path)?,
     })
