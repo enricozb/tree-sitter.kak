@@ -1,6 +1,7 @@
 mod event;
 mod kakoune;
 mod server;
+mod tree;
 
 use anyhow::Result;
 use clap::Parser;

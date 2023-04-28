@@ -7,7 +7,7 @@ use serde::Deserialize;
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum Event {
-  Highlight { buffer: String },
+  Highlight { buffer: String, language: String },
 }
 
 pub struct Reader {
