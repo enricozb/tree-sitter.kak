@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, thread};
+use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{anyhow, Result};
 use daemonize::Daemonize;
@@ -84,7 +84,7 @@ impl Server {
 
   /// Saves a buffer to disk.
   fn save_buffer(&mut self, connection: &mut Connection, buffer: &str) -> Result<()> {
-    self.kakoune.save_buffer(connection, &buffer)?;
+    self.kakoune.save_buffer(connection, buffer)?;
 
     Ok(())
   }
