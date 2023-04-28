@@ -1,5 +1,6 @@
 mod event;
 mod kakoune;
+mod languages;
 mod server;
 mod tree;
 

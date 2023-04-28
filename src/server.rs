@@ -54,7 +54,7 @@ impl Server {
     loop {
       match self.event_reader.read() {
         Ok(Event::Highlight { buffer, language }) => {
-          self.highlight(buffer, language)?;
+          self.highlight(&buffer, language)?;
         }
 
         Err(err) => println!("failed to read event: {err}"),
@@ -77,17 +77,18 @@ impl Server {
   }
 
   /// Highlights a buffer.
-  fn highlight(&mut self, buffer: String, language: String) -> Result<()> {
+  fn highlight(&mut self, buffer: &str, language: String) -> Result<()> {
     // TODO(enricozb): omitted b/c only supporting highlighting right now
     // self.update_tree(buffer, language)?;
 
-    let content_file = self.kakoune.save_buffer(&buffer)?;
+    let content_file = self.kakoune.save_buffer(buffer)?;
+    let content = fs::read(content_file)?;
 
     let spans = self
       .highlighters
       .entry(language)
       .or_insert_with_key(|language| tree::new_highlighter(language))
-      .highlight_file(&fs::read(content_file)?);
+      .highlight_file(&content)?;
 
     Ok(())
   }
