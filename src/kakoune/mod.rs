@@ -1,3 +1,4 @@
+pub mod connection;
 pub mod range;
 
 use std::{
@@ -9,6 +10,8 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
+
+use self::connection::Connection;
 
 /// A struct for interacting with a kakoune instance.
 pub struct Kakoune {
@@ -38,19 +41,29 @@ impl Kakoune {
     })
   }
 
-  /// Writes the buffer contents the diff from the previous buffer, returning the
-  /// path of the buffer's content.
-  pub fn save_buffer(&mut self, buffer: &str) -> Result<PathBuf> {
+  /// Returns a path to where the contents of buffer should be stored.
+  ///
+  /// [`save_buffer`] must be called before [`content_file`] in order to ensure
+  /// that the returned path exists and has the expected contents.
+  pub fn content_file(&mut self, buffer: &str) -> Result<PathBuf> {
     let buffer_dir = self.buffer_dir(buffer)?;
-    let content_file = buffer_dir.join("content");
 
-    self.send_command(buffer, &format!("write -force {content_file:?}"))?;
-
-    // TODO(enricozb): implement diffing between content files
-
-    Ok(content_file)
+    Ok(buffer_dir.join("content"))
   }
 
+  /// Writes the buffer contents the diff from the previous buffer, returning the
+  /// path of the buffer's content.
+  pub fn save_buffer(&mut self, connection: &mut Connection, buffer: &str) -> Result<()> {
+    let content_file = self.content_file(buffer)?;
+
+    // TODO(enricozb): implement diffing between content files
+    connection.send_command(buffer, &format!("write -force {content_file:?}"))?;
+
+    Ok(())
+  }
+
+  // TODO(enricozb): re-implement highlighting
+  /*
   pub fn highlight(&mut self, buffer: &str, ranges: &[range::Range]) -> Result<()> {
     self.send_command(buffer, "declare-option -hidden range-specs tree_kak_ranges")?;
     self.send_command(buffer, "declare-option -hidden range-specs tree_kak_ranges_spare")?;
@@ -71,25 +84,7 @@ impl Kakoune {
 
     Ok(())
   }
-
-  /// Sends a command to the kakoune instance.
-  fn send_command(&self, buffer: &str, command: &str) -> Result<()> {
-    println!("sending command: {command}");
-
-    let mut kak = Command::new("kak")
-      .stdin(Stdio::piped())
-      .args(["-p", &self.session_id.to_string()])
-      .spawn()?;
-
-    let stdin = kak.stdin.as_mut().ok_or(anyhow!("failed to open stdin"))?;
-    write!(stdin, "evaluate-commands -buffer {buffer} %[ {command} ]")?;
-
-    let status = kak.wait()?;
-
-    println!("command status: {status}");
-
-    Ok(())
-  }
+  */
 
   /// Returns a buffer's directory, creating it if necessary.
   fn buffer_dir(&mut self, buffer: &str) -> Result<PathBuf> {
