@@ -2,13 +2,13 @@ use std::{collections::HashMap, thread};
 
 use anyhow::{anyhow, Result};
 use tempfile::TempDir;
-use tree_sitter::Parser;
 
 use crate::{
   buffer::Buffer,
   kakoune::Kakoune,
   request::{Reader as RequestReader, Request},
-  tree, Args,
+  tree::Parser,
+  Args,
 };
 
 struct Server {
@@ -65,7 +65,7 @@ impl Server {
   fn set_buffer_language(&mut self, buffer: String, language: String) -> Result<()> {
     let content_file = self.kakoune.save_buffer(&buffer)?;
     let parser = self.get_parser(language.clone());
-    let tree = tree::parse_file(parser, &content_file)?;
+    let tree = parser.parse_file(&content_file)?;
 
     self.buffers.insert(buffer, Buffer::new(language, tree));
 
@@ -77,11 +77,7 @@ impl Server {
     let mut buf = self.buffers.remove(&buffer).ok_or(anyhow!("unknown buffer {buffer}"))?;
 
     let content_file = self.kakoune.save_buffer(&buffer)?;
-    let parser = self.get_parser(buf.language.clone());
-
-    // TODO(enricozb): create a custom parser struct that can parse a path,
-    // instead of this exported function.
-    buf.tree = tree::parse_file(parser, &content_file)?;
+    buf.tree = self.get_parser(buf.language.clone()).parse_file(&content_file)?;
 
     self.buffers.insert(buffer, buf);
 
@@ -93,7 +89,7 @@ impl Server {
     self
       .parsers
       .entry(language)
-      .or_insert_with_key(|language| tree::new_parser(language))
+      .or_insert_with_key(|language| Parser::new(language).expect("new parser"))
   }
 
   /*
