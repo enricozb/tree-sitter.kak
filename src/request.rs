@@ -40,6 +40,8 @@ impl Reader {
     let mut data = String::new();
     stream.read_to_string(&mut data)?;
 
+    println!("request: {data}");
+
     Ok((Connection::new(stream), serde_json::from_str(&data)?))
   }
 }
