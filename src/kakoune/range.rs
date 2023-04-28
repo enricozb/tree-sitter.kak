@@ -5,6 +5,27 @@ use std::{
 
 use tree_sitter_highlight::{Error as TSError, Highlight, HighlightEvent as TSEvent};
 
+static FACES: [&str; 18] = [
+  "meta",  // "attribute"
+  "value", // "constant"
+  "comment",
+  "function", // "function"
+  "function", // "function.builtin"
+  "meta",     // "function.macro"
+  "keyword",
+  "operator",
+  "identifier", // "property"
+  "string",
+  "red", // "string.special"
+  "red", // "tag"
+  "type",
+  "type", // "type.builtin"
+  "variable",
+  "value",    // "variable.builtin"
+  "variable", // "variable.parameter"
+  "value",    // "constructor"
+];
+
 /// A location in a code source.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Loc {
@@ -59,13 +80,10 @@ impl Range {
 
 impl Display for Range {
   fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-    let color = ["red", "green", "blue", "yellow"];
-    let color = color[self.start.col % 4];
-
     write!(
       f,
       "{}.{},{}.{}|{}",
-      self.start.line, self.start.col, self.end.line, self.end.col, color
+      self.start.line, self.start.col, self.end.line, self.end.col, FACES[self.highlight.0]
     )
   }
 }
@@ -75,7 +93,7 @@ struct Cursor<'a> {
   content: &'a [u8],
   offset: usize,
   loc: Loc,
-  highlight: Option<Highlight>,
+  highlights: Vec<Highlight>,
 }
 
 impl<'a> Cursor<'a> {
@@ -85,7 +103,7 @@ impl<'a> Cursor<'a> {
       content,
       offset: 0,
       loc: Loc::default(),
-      highlight: None,
+      highlights: Vec::new(),
     }
   }
 
@@ -96,18 +114,18 @@ impl<'a> Cursor<'a> {
         let start = self.loc;
         let end = self.advance(end);
 
-        self.highlight.map(|highlight| Range {
+        self.highlights.last().map(|highlight| Range {
           start: start.one_idx(),
           end: end.one_idx(),
-          highlight,
+          highlight: *highlight,
         })
       }
       TSEvent::HighlightStart(highlight) => {
-        self.highlight = Some(highlight);
+        self.highlights.push(highlight);
         None
       }
       TSEvent::HighlightEnd => {
-        self.highlight = None;
+        self.highlights.pop();
         None
       }
     }

@@ -2,18 +2,16 @@ use anyhow::{anyhow, Result};
 use tree_sitter::Language;
 use tree_sitter_highlight::HighlightConfiguration;
 
-const HIGHLIGHT_NAMES: [&str; 19] = [
+static HIGHLIGHT_NAMES: [&str; 18] = [
   "attribute",
   "constant",
   "comment",
-  "function.builtin",
   "function",
+  "function.builtin",
+  "function.macro",
   "keyword",
   "operator",
   "property",
-  "punctuation",
-  "punctuation.bracket",
-  "punctuation.delimiter",
   "string",
   "string.special",
   "tag",
@@ -22,6 +20,7 @@ const HIGHLIGHT_NAMES: [&str; 19] = [
   "variable",
   "variable.builtin",
   "variable.parameter",
+  "constructor",
 ];
 
 /// Returns the `HighlightConfiguration` for a given language.
