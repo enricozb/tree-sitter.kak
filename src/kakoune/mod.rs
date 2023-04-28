@@ -57,6 +57,7 @@ impl Kakoune {
     self.send_command(buffer, "set-option buffer tree_kak_ranges_spare %val{timestamp}")?;
     self.send_command(buffer, "add-highlighter buffer/ ranges tree_kak_ranges")?;
 
+    // TODO(enricozb): determine if chunking is necessary
     for ranges in ranges.chunks(20) {
       let ranges: String = ranges.iter().map(|range| format!("'{range}' ")).collect();
 
