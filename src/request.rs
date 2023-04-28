@@ -7,7 +7,11 @@ use serde::Deserialize;
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum Request {
-  Highlight { buffer: String, language: String },
+  /// Sets a buffer's language.
+  SetLanguage { buffer: String, language: String },
+
+  /// Reconstructs the buffer's AST.
+  Parse { buffer: String },
 }
 
 pub struct Reader {

@@ -1,15 +1,14 @@
-use std::{collections::HashMap, fs, thread};
+use std::{collections::HashMap, thread};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use tempfile::TempDir;
-use tree_sitter::{Parser, Tree};
+use tree_sitter::Parser;
 
 use crate::{
-  kakoune::{range::Range, Kakoune},
+  buffer::Buffer,
+  kakoune::Kakoune,
   request::{Reader as RequestReader, Request},
-  tree,
-  tree::Highlighter,
-  Args,
+  tree, Args,
 };
 
 struct Server {
@@ -19,14 +18,11 @@ struct Server {
   /// The kakoune instance.
   kakoune: Kakoune,
 
-  /// The parsed trees keyed by buffer.
-  trees: HashMap<String, Tree>,
-
   /// Tree-sitter parsers to be reused.
   parsers: HashMap<String, Parser>,
 
-  /// Tree-sitter highlighters to be reused.
-  highlighters: HashMap<String, Highlighter>,
+  /// The buffers.
+  buffers: HashMap<String, Buffer>,
 
   /// The temporary directory containing scratch space.
   /// This is destroyed after this structure is dropped.
@@ -42,9 +38,8 @@ impl Server {
     Ok(Self {
       requests: RequestReader::new(&tempdir.path().join("socket"))?,
       kakoune: Kakoune::new(args.session_id, tempdir.path().join("buffers"))?,
-      trees: HashMap::new(),
       parsers: HashMap::new(),
-      highlighters: HashMap::new(),
+      buffers: HashMap::new(),
       tempdir,
     })
   }
@@ -53,8 +48,12 @@ impl Server {
   fn run(&mut self) -> Result<()> {
     loop {
       match self.requests.read() {
-        Ok(Request::Highlight { buffer, language }) => {
-          self.highlight(&buffer, language)?;
+        Ok(Request::SetLanguage { buffer, language }) => {
+          self.set_buffer_language(buffer, language)?;
+        }
+
+        Ok(Request::Parse { buffer }) => {
+          self.parse_buffer(buffer)?;
         }
 
         Err(err) => println!("failed to read request: {err}"),
@@ -62,24 +61,46 @@ impl Server {
     }
   }
 
-  /// Updates the buffer's tree.
-  #[allow(unused)]
-  fn update_tree(&mut self, buffer: String, language: String) -> Result<()> {
+  /// Sets a buffer's language.
+  fn set_buffer_language(&mut self, buffer: String, language: String) -> Result<()> {
     let content_file = self.kakoune.save_buffer(&buffer)?;
-    let parser = self
-      .parsers
-      .entry(language)
-      .or_insert_with_key(|language| tree::new_parser(language));
+    let parser = self.get_parser(language.clone());
+    let tree = tree::parse_file(parser, &content_file)?;
 
-    self.trees.insert(buffer, tree::parse_file(parser, &content_file)?);
+    self.buffers.insert(buffer, Buffer::new(language, tree));
 
     Ok(())
   }
 
+  /// Updates the buffer's syntax tree.
+  fn parse_buffer(&mut self, buffer: String) -> Result<()> {
+    let mut buf = self.buffers.remove(&buffer).ok_or(anyhow!("unknown buffer {buffer}"))?;
+
+    let content_file = self.kakoune.save_buffer(&buffer)?;
+    let parser = self.get_parser(buf.language.clone());
+
+    // TODO(enricozb): create a custom parser struct that can parse a path,
+    // instead of this exported function.
+    buf.tree = tree::parse_file(parser, &content_file)?;
+
+    self.buffers.insert(buffer, buf);
+
+    Ok(())
+  }
+
+  /// Returns the parser for the provided language, creating one if needed.
+  fn get_parser(&mut self, language: String) -> &mut Parser {
+    self
+      .parsers
+      .entry(language)
+      .or_insert_with_key(|language| tree::new_parser(language))
+  }
+
+  /*
   /// Highlights a buffer.
   fn highlight(&mut self, buffer: &str, language: String) -> Result<()> {
     // TODO(enricozb): omitted b/c only supporting highlighting right now
-    // self.update_tree(buffer, language)?;
+    // self.parse_buffer(buffer, language)?;
 
     let content_file = self.kakoune.save_buffer(buffer)?;
     let content = fs::read(content_file)?;
@@ -94,6 +115,7 @@ impl Server {
 
     Ok(())
   }
+  */
 }
 
 /// Starts the server with the provided arguments.

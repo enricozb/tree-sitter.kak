@@ -1,3 +1,4 @@
+mod buffer;
 mod kakoune;
 mod languages;
 mod request;
