@@ -5,16 +5,16 @@ use tempfile::TempDir;
 use tree_sitter::{Parser, Tree};
 
 use crate::{
-  event::{Event, Reader as EventReader},
   kakoune::{range::Range, Kakoune},
+  request::{Reader as RequestReader, Request},
   tree,
   tree::Highlighter,
   Args,
 };
 
 struct Server {
-  /// The event reader.
-  event_reader: EventReader,
+  /// The request reader.
+  requests: RequestReader,
 
   /// The kakoune instance.
   kakoune: Kakoune,
@@ -40,7 +40,7 @@ impl Server {
     let tempdir = tempfile::tempdir()?;
 
     Ok(Self {
-      event_reader: EventReader::new(&tempdir.path().join("socket"))?,
+      requests: RequestReader::new(&tempdir.path().join("socket"))?,
       kakoune: Kakoune::new(args.session_id, tempdir.path().join("buffers"))?,
       trees: HashMap::new(),
       parsers: HashMap::new(),
@@ -52,12 +52,12 @@ impl Server {
   /// Runs the server.
   fn run(&mut self) -> Result<()> {
     loop {
-      match self.event_reader.read() {
-        Ok(Event::Highlight { buffer, language }) => {
+      match self.requests.read() {
+        Ok(Request::Highlight { buffer, language }) => {
           self.highlight(&buffer, language)?;
         }
 
-        Err(err) => println!("failed to read event: {err}"),
+        Err(err) => println!("failed to read request: {err}"),
       }
     }
   }

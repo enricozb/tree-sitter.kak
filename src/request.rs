@@ -6,7 +6,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
-pub enum Event {
+pub enum Request {
   Highlight { buffer: String, language: String },
 }
 
@@ -26,13 +26,12 @@ impl Reader {
   }
 
   /// Return the most recent event, blocks if no event is ready.
-  pub fn read(&self) -> Result<Event> {
+  pub fn read(&self) -> Result<Request> {
     let mut stream = self.socket.accept()?.0;
 
-    let mut data = String::new();
-
     // TODO(enricozb): log this value
-    let _num = stream.read_to_string(&mut data)?;
+    let mut data = String::new();
+    stream.read_to_string(&mut data)?;
 
     Ok(serde_json::from_str(&data)?)
   }
