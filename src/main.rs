@@ -8,7 +8,7 @@ use anyhow::Result;
 use clap::Parser;
 
 #[derive(Parser)]
-struct Args {
+pub struct Args {
   /// Whether or not to run in the background.
   #[arg(short, long)]
   daemonize: bool,

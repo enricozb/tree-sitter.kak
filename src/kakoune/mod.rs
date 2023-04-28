@@ -1,3 +1,5 @@
+pub mod range;
+
 use std::{
   collections::HashMap,
   fs,
@@ -47,6 +49,26 @@ impl Kakoune {
     // TODO(enricozb): implement diffing between content files
 
     Ok(content_file)
+  }
+
+  pub fn highlight(&mut self, buffer: &str, ranges: &[range::Range]) -> Result<()> {
+    self.send_command(buffer, "declare-option -hidden range-specs tree_kak_ranges")?;
+    self.send_command(buffer, "declare-option -hidden range-specs tree_kak_ranges_spare")?;
+    self.send_command(buffer, "set-option buffer tree_kak_ranges_spare %val{timestamp}")?;
+    self.send_command(buffer, "add-highlighter buffer/ ranges tree_kak_ranges")?;
+
+    for ranges in ranges.chunks(20) {
+      let ranges: String = ranges.iter().map(|range| format!("'{range}' ")).collect();
+
+      self.send_command(
+        buffer,
+        &format!("set-option -add buffer tree_kak_ranges_spare {ranges}"),
+      )?;
+    }
+
+    self.send_command(buffer, "set-option buffer tree_kak_ranges %opt{tree_kak_ranges_spare}")?;
+
+    Ok(())
   }
 
   /// Sends a command to the kakoune instance.

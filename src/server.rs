@@ -6,7 +6,7 @@ use tree_sitter::{Parser, Tree};
 
 use crate::{
   event::{Event, Reader as EventReader},
-  kakoune::Kakoune,
+  kakoune::{range::Range, Kakoune},
   tree,
   tree::Highlighter,
   Args,
@@ -84,18 +84,20 @@ impl Server {
     let content_file = self.kakoune.save_buffer(buffer)?;
     let content = fs::read(content_file)?;
 
-    let spans = self
+    let events = self
       .highlighters
       .entry(language)
-      .or_insert_with_key(|language| tree::new_highlighter(language))
+      .or_insert_with_key(|language| Highlighter::new(language).expect("Highlighter::new"))
       .highlight_file(&content)?;
+
+    self.kakoune.highlight(buffer, &Range::from_events(&content, events))?;
 
     Ok(())
   }
 }
 
 /// Starts the server with the provided arguments.
-pub(crate) fn start(args: &Args) -> Result<()> {
+pub fn start(args: &Args) -> Result<()> {
   let mut server = Server::new(args)?;
 
   if args.daemonize {

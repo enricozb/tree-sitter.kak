@@ -8,42 +8,18 @@ use tree_sitter_highlight::{
 
 use crate::languages;
 
-const HIGHLIGHT_NAMES: [&str; 18] = [
-  "attribute",
-  "constant",
-  "function.builtin",
-  "function",
-  "keyword",
-  "operator",
-  "property",
-  "punctuation",
-  "punctuation.bracket",
-  "punctuation.delimiter",
-  "string",
-  "string.special",
-  "tag",
-  "type",
-  "type.builtin",
-  "variable",
-  "variable.builtin",
-  "variable.parameter",
-];
-
 pub struct Highlighter {
   highlighter: TSHighlighter,
   config: TSConfig,
 }
 
 impl Highlighter {
-  fn new(language: &str) -> Self {
-    let rust = unsafe { languages::tree_sitter_rust() };
-    let mut config = TSConfig::new(tree_sitter_rust::language(), tree_sitter_rust::HIGHLIGHT_QUERY, "", "").unwrap();
-    config.configure(&HIGHLIGHT_NAMES);
-
-    Self {
+  /// Creates a new `Highlighter`.
+  pub fn new(language: &str) -> Result<Self> {
+    Ok(Self {
       highlighter: TSHighlighter::new(),
-      config,
-    }
+      config: languages::highlighter_config(language)?,
+    })
   }
 
   pub fn highlight_file<'a>(
@@ -57,11 +33,6 @@ impl Highlighter {
 pub fn new_parser(language: &str) -> Parser {
   // TODO(enricozb): parser.set_language()
   Parser::new()
-}
-
-pub fn new_highlighter(language: &str) -> Highlighter {
-  // TODO(enricozb): highlighter.set_language()
-  Highlighter::new(language)
 }
 
 pub fn parse_file(parser: &mut Parser, content_file: &Path) -> Result<Tree> {
