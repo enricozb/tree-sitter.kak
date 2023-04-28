@@ -64,7 +64,7 @@ impl Server {
       let (mut connection, request) = self.requests.listen().context("listen")?;
 
       if let Err(err) = self.handle_request(&mut connection, request) {
-        connection.log_error(&format!("{err}")).context("log_error")?;
+        connection.log_error(&format!("{err:?}")).context("log_error")?;
       }
     }
   }
