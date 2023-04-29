@@ -1,4 +1,4 @@
-use std::{io::Write, os::unix::net::UnixStream};
+use std::{io::Write, net::Shutdown, os::unix::net::UnixStream};
 
 use anyhow::Result;
 
@@ -26,5 +26,10 @@ impl Connection {
     )?;
 
     Ok(())
+  }
+
+  /// Closes the connection
+  pub fn close(&self) -> Result<()> {
+    Ok(self.0.shutdown(Shutdown::Both)?)
   }
 }

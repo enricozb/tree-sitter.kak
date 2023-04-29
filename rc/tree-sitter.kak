@@ -50,7 +50,7 @@ define-command -override -hidden tree-sitter-buffer-request -docstring "send req
   evaluate-commands %sh{ echo "$1" | socat - $kak_opt_tree_sitter_socket }
 }
 
-define-command -override -hidden tree-sitter-reload %{
+define-command -override tree-sitter-reload %{
   tree-sitter-buffer-request "
     type   = 'reload_config'
   "

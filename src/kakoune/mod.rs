@@ -3,7 +3,7 @@ use std::{
   collections::HashMap,
   fs,
   io::Write,
-  path::PathBuf,
+  path::{Path, PathBuf},
   process::{Command, Stdio},
 };
 
@@ -41,6 +41,11 @@ impl Kakoune {
     })
   }
 
+  /// Sends the socket path to the kakoune instance.
+  pub fn send_socket(&mut self, socket: &Path) -> Result<()> {
+    self.send_command(None, &format!("set-option global tree_sitter_socket {socket:?}"))
+  }
+
   /// Returns a path to where the contents of buffer should be stored.
   ///
   /// [`save_buffer`] must be called before [`content_file`] in order to ensure
@@ -63,20 +68,23 @@ impl Kakoune {
   }
 
   pub fn highlight(&mut self, buffer: &str, ranges: &RangeSpecs) -> Result<()> {
-    self.send_command(buffer, "set-option buffer tree_sitter_ranges_spare %val{timestamp}")?;
+    self.send_command(
+      Some(buffer),
+      "set-option buffer tree_sitter_ranges_spare %val{timestamp}",
+    )?;
 
     // TODO(enricozb): determine if chunking is necessary
     for ranges in ranges.chunks(20) {
       let ranges: String = ranges.iter().map(|range| format!("'{range}' ")).collect();
 
       self.send_command(
-        buffer,
+        Some(buffer),
         &format!("set-option -add buffer tree_sitter_ranges_spare {ranges}"),
       )?;
     }
 
     self.send_command(
-      buffer,
+      Some(buffer),
       "set-option buffer tree_sitter_ranges %opt{tree_sitter_ranges_spare}",
     )?;
 
@@ -99,7 +107,7 @@ impl Kakoune {
   }
 
   /// Sends a command to the kakoune session.
-  pub fn send_command(&mut self, buffer: &str, command: &str) -> Result<()> {
+  pub fn send_command(&mut self, buffer: Option<&str>, command: &str) -> Result<()> {
     let mut kak = Command::new("kak")
       .arg("-p")
       .arg(self.session.to_string())
@@ -108,7 +116,11 @@ impl Kakoune {
 
     let stdin = kak.stdin.as_mut().ok_or(anyhow!("no stdin"))?;
 
-    writeln!(stdin, "evaluate-commands -buffer {buffer} %[ {command} ]")?;
+    if let Some(buffer) = buffer {
+      writeln!(stdin, "evaluate-commands -buffer {buffer} %[ {command} ]")?;
+    } else {
+      writeln!(stdin, "evaluate-commands %[ {command} ]")?;
+    }
 
     Ok(())
   }

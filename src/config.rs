@@ -34,12 +34,7 @@ impl Config {
 
   /// Get the faces for a language.
   pub fn faces(&self, language: &str) -> Option<&HashMap<String, String>> {
-    self.config.language.get(language).map(|language| {
-      let faces = &language.faces;
-      println!("getting faces: {}", faces.len());
-
-      faces
-    })
+    self.config.language.get(language).map(|language| &language.faces)
   }
 }
 

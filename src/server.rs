@@ -48,11 +48,7 @@ impl Server {
     let tempdir = tempfile::tempdir()?;
     let socket = tempdir.path().join("socket");
 
-    // TODO(enricozb): instead of printing the socket, send the command
-    // to the kakoune session to connect to the server.
-    println!("{}", socket.to_str().ok_or(anyhow!("non-unicode socket path"))?);
-
-    Ok(Self {
+    let mut server = Self {
       config: Config::from_file(args.config.clone())?,
       requests: RequestReader::new(&socket)?,
       kakoune: Kakoune::new(args.session, tempdir.path().join("buffers"))?,
@@ -60,7 +56,11 @@ impl Server {
       buffers: HashMap::new(),
       highlighters: HashMap::new(),
       tempdir,
-    })
+    };
+
+    server.kakoune.send_socket(&socket).context("send socket")?;
+
+    Ok(server)
   }
 
   /// The path to the pid file.
@@ -101,6 +101,8 @@ impl Server {
       }
 
       Request::Highlight { buffer } => {
+        // close early so user doesn't wait for parsing.
+        connection.close()?;
         self.highlight(&buffer)?;
       }
     }
