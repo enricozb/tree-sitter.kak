@@ -5,7 +5,7 @@ use std::{collections::HashMap, fs, path::Path};
 use anyhow::{anyhow, Result};
 use tree_sitter::{Query, QueryCursor, Tree};
 
-use self::range::{RangeSpec, RangeSpecs};
+use self::range::{Point, RangeSpec, RangeSpecs};
 use crate::languages::Language;
 
 /// A syntax highlighter.
@@ -37,11 +37,13 @@ impl Highlighter {
 
     let mut capture_stack: RangeSpecs<'a> = RangeSpecs::new();
     let mut highlights: RangeSpecs<'a> = RangeSpecs::new();
+    let mut cur_loc = Point::default();
 
     for query_match in captures {
       for capture in query_match.0.captures {
         let ts_range = capture.node.range();
         let capture_name = &capture_names[capture.index as usize];
+
         let face = if let Some(face) = faces.get(capture_name) {
           face
         } else {
@@ -50,31 +52,45 @@ impl Highlighter {
 
         let range = RangeSpec::from((ts_range, face));
 
+        println!("orig: {}", range);
+
         if let Some(last) = capture_stack.last().cloned() {
-          if range.start < last.end {
-            highlights.push(RangeSpec::new(last.start, range.start, last.face));
-          } else {
+          if range.start < last.end && last.start != range.start {
+            highlights.push(RangeSpec::new(last.start, range.start.prev(), last.face));
+          } else if last.end < range.start {
             highlights.push(RangeSpec::new(last.start, last.end, last.face));
-            let mut cur_loc = last.end;
+            cur_loc = last.end.next();
             capture_stack.pop();
 
-            while capture_stack
-              .last()
-              .map(|last| last.end <= range.start)
-              .unwrap_or(false)
-            {
+            while capture_stack.last().map(|last| last.end < range.start).unwrap_or(false) {
               let last = capture_stack.pop().unwrap();
-              highlights.push(RangeSpec::new(cur_loc, last.end, last.face));
-              cur_loc = last.end;
+              if cur_loc <= last.end {
+                highlights.push(RangeSpec::new(cur_loc, last.end, last.face));
+                cur_loc = last.end.next();
+              }
             }
 
             if let Some(last) = capture_stack.last() {
-              highlights.push(RangeSpec::new(cur_loc, range.start, last.face));
+              if cur_loc < range.start {
+                highlights.push(RangeSpec::new(cur_loc, range.start.prev(), last.face));
+              }
             }
           }
         }
 
         capture_stack.push(range);
+      }
+    }
+
+    // remove any remaining ranges in the capture_stack.
+    if let Some(last) = capture_stack.last() {
+      cur_loc = last.start;
+    }
+
+    for capture in capture_stack.into_iter().rev() {
+      if cur_loc <= capture.end {
+        highlights.push(RangeSpec::new(cur_loc, capture.end, capture.face));
+        cur_loc = capture.end.next()
       }
     }
 

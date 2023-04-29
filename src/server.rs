@@ -48,6 +48,8 @@ impl Server {
     let tempdir = tempfile::tempdir()?;
     let socket = tempdir.path().join("socket");
 
+    // TODO(enricozb): instead of printing the socket, send the command
+    // to the kakoune session to connect to the server.
     println!("{}", socket.to_str().ok_or(anyhow!("non-unicode socket path"))?);
 
     Ok(Self {
@@ -162,11 +164,11 @@ impl Server {
     };
 
     if let Some(faces) = self.config.faces(&buffer.language) {
-      // TODO(enricozb): spawn async thread.
+      // TODO(enricozb): spawn async thread, or drop the connection.
       let range_specs = highlighter.highlight(faces, &buffer.tree, &content_file)?;
 
       for range_spec in &range_specs {
-        println!("{range_spec}");
+        println!("computed: {range_spec}");
       }
 
       self.kakoune.highlight(bufname, range_specs)?;

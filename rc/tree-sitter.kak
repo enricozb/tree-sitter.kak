@@ -26,13 +26,6 @@ define-command -override tree-sitter-enable -docstring "start the tree-sitter se
     tree-sitter-buffer-highlight
   }
 
-  hook -group tree-sitter buffer InsertChar .* %{
-    tree-sitter-buffer-save
-    tree-sitter-buffer-parse
-    tree-sitter-buffer-highlight
-  }
-
-
   hook -group tree-sitter buffer ModeChange 'pop:insert:normal' %{
     tree-sitter-buffer-save
     tree-sitter-buffer-parse
