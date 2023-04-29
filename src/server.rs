@@ -9,6 +9,8 @@ use tempfile::TempDir;
 
 use crate::{
   buffer::Buffer,
+  config::Config,
+  highlight::Highlighter,
   kakoune::{connection::Connection, Kakoune},
   request::{Reader as RequestReader, Request},
   tree::Parser,
@@ -16,6 +18,9 @@ use crate::{
 };
 
 struct Server {
+  /// Server configuration.
+  config: Config,
+
   /// The request reader.
   requests: RequestReader,
 
@@ -27,6 +32,9 @@ struct Server {
 
   /// The buffers.
   buffers: HashMap<String, Buffer>,
+
+  /// Highlighters to be reused.
+  highlighters: HashMap<String, Highlighter>,
 
   /// The temporary directory containing scratch space.
   /// This is destroyed after this structure is dropped.
@@ -43,10 +51,12 @@ impl Server {
     println!("{}", socket.to_str().ok_or(anyhow!("non-unicode socket path"))?);
 
     Ok(Self {
+      config: Config::from_file(&args.config)?,
       requests: RequestReader::new(&socket)?,
-      kakoune: Kakoune::new(args.session_id, tempdir.path().join("buffers"))?,
+      kakoune: Kakoune::new(args.session, tempdir.path().join("buffers"))?,
       parsers: HashMap::new(),
       buffers: HashMap::new(),
+      highlighters: HashMap::new(),
       tempdir,
     })
   }
@@ -83,6 +93,10 @@ impl Server {
       Request::Parse { buffer } => {
         self.parse_buffer(buffer)?;
       }
+
+      Request::Highlight { buffer } => {
+        self.highlight(&buffer)?;
+      }
     }
 
     Ok(())
@@ -111,7 +125,10 @@ impl Server {
     // TODO(enricozb): can we do this without removing the entry?
     // We can by getting a mutable reference to self.parsers, and
     // doing something like Self::get_parser(&mut self.parsers).
-    let mut buf = self.buffers.remove(&buffer).ok_or(anyhow!("unknown buffer {buffer}"))?;
+    let mut buf = self
+      .buffers
+      .remove(&buffer)
+      .ok_or(anyhow!("unknown buffer: {buffer}"))?;
 
     let content_file = self.kakoune.content_file(&buffer)?;
     buf.tree = self.get_parser(&buf.language)?.parse_file(&content_file)?;
@@ -131,24 +148,28 @@ impl Server {
     Ok(parser)
   }
 
-  // TODO(enricozb): re-implement highlighting
-  /*
-  /// Highlights a buffer.
-  fn highlight(&mut self, buffer: &str, language: String) -> Result<()> {
-    let content_file = self.kakoune.save_buffer(buffer)?;
-    let content = fs::read(content_file)?;
+  /// Highlight the provided buffer asynchronously.
+  fn highlight(&mut self, bufname: &str) -> Result<()> {
+    let content_file = self.kakoune.content_file(bufname)?;
+    let buffer = self.buffers.get(bufname).ok_or(anyhow!("unknown buffer: {bufname}"))?;
+    let highlighter = match self.highlighters.entry(buffer.language.clone()) {
+      Entry::Occupied(o) => o.into_mut(),
+      Entry::Vacant(v) => v.insert(Highlighter::new(&buffer.language).context("new highlighter")?),
+    };
 
-    let events = self
-      .highlighters
-      .entry(language)
-      .or_insert_with_key(|language| Highlighter::new(language).expect("Highlighter::new"))
-      .highlight_file(&content)?;
+    if let Some(faces) = self.config.faces(&buffer.language) {
+      // TODO(enricozb): spawn async thread.
+      let range_specs = highlighter.highlight(faces, &buffer.tree, &content_file)?;
 
-    self.kakoune.highlight(buffer, &Range::from_events(&content, events))?;
+      for range_spec in &range_specs {
+        println!("{range_spec}");
+      }
+
+      self.kakoune.highlight(bufname, range_specs)?;
+    }
 
     Ok(())
   }
-  */
 }
 
 /// Starts the server with the provided arguments.

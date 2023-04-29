@@ -1,15 +1,22 @@
 pub mod connection;
+use std::{
+  collections::HashMap,
+  fs,
+  io::Write,
+  path::PathBuf,
+  process::{Command, Stdio},
+};
 
-use std::{collections::HashMap, fs, path::PathBuf};
-
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use self::connection::Connection;
+use crate::highlight::RangeSpecs;
 
 /// A struct for interacting with a kakoune instance.
 pub struct Kakoune {
+  // TODO(enricozb): change to usize
   /// The session id for the kakoune instance.
-  session_id: i32,
+  session: i32,
 
   /// The directory for storing buffer contents.
   buffers_dir: PathBuf,
@@ -22,13 +29,13 @@ pub struct Kakoune {
 
 impl Kakoune {
   /// Creates a new `Kakoune`.
-  pub fn new(session_id: i32, buffers_dir: PathBuf) -> Result<Self> {
+  pub fn new(session: i32, buffers_dir: PathBuf) -> Result<Self> {
     if !buffers_dir.exists() {
       fs::create_dir(&buffers_dir)?;
     }
 
     Ok(Self {
-      session_id,
+      session,
       buffers_dir,
       buffers: HashMap::new(),
     })
@@ -55,13 +62,8 @@ impl Kakoune {
     Ok(())
   }
 
-  // TODO(enricozb): re-implement highlighting
-  /*
-  pub fn highlight(&mut self, buffer: &str, ranges: &[range::Range]) -> Result<()> {
-    self.send_command(buffer, "declare-option -hidden range-specs tree_kak_ranges")?;
-    self.send_command(buffer, "declare-option -hidden range-specs tree_kak_ranges_spare")?;
-    self.send_command(buffer, "set-option buffer tree_kak_ranges_spare %val{timestamp}")?;
-    self.send_command(buffer, "add-highlighter buffer/ ranges tree_kak_ranges")?;
+  pub fn highlight(&mut self, buffer: &str, ranges: RangeSpecs) -> Result<()> {
+    self.send_command(buffer, "set-option buffer tree_sitter_ranges_spare %val{timestamp}")?;
 
     // TODO(enricozb): determine if chunking is necessary
     for ranges in ranges.chunks(20) {
@@ -69,15 +71,17 @@ impl Kakoune {
 
       self.send_command(
         buffer,
-        &format!("set-option -add buffer tree_kak_ranges_spare {ranges}"),
+        &format!("set-option -add buffer tree_sitter_ranges_spare {ranges}"),
       )?;
     }
 
-    self.send_command(buffer, "set-option buffer tree_kak_ranges %opt{tree_kak_ranges_spare}")?;
+    self.send_command(
+      buffer,
+      "set-option buffer tree_sitter_ranges %opt{tree_sitter_ranges_spare}",
+    )?;
 
     Ok(())
   }
-  */
 
   /// Returns a buffer's directory, creating it if necessary.
   fn buffer_dir(&mut self, buffer: &str) -> Result<PathBuf> {
@@ -92,5 +96,20 @@ impl Kakoune {
 
       Ok(dir)
     }
+  }
+
+  /// Sends a command to the kakoune session.
+  pub fn send_command(&mut self, buffer: &str, command: &str) -> Result<()> {
+    let mut kak = Command::new("kak")
+      .arg("-p")
+      .arg(self.session.to_string())
+      .stdin(Stdio::piped())
+      .spawn()?;
+
+    let stdin = kak.stdin.as_mut().ok_or(anyhow!("no stdin"))?;
+
+    writeln!(stdin, "evaluate-commands -buffer {buffer} %[ {command} ]")?;
+
+    Ok(())
   }
 }

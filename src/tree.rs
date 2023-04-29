@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use anyhow::{anyhow, Result};
 use tree_sitter::{Parser as TSParser, Tree};
 
-use crate::languages;
+use crate::languages::Language;
 
 /// A wrapper to tree-sitter's [`TSParser`].
 pub struct Parser(TSParser);
@@ -12,7 +12,7 @@ impl Parser {
   /// Creates a new `Parser`.
   pub fn new(language: &str) -> Result<Self> {
     let mut parser = TSParser::new();
-    parser.set_language(languages::from(language)?)?;
+    parser.set_language(Language::try_from(language)?.into())?;
 
     Ok(Self(parser))
   }

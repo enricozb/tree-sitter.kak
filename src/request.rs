@@ -17,6 +17,9 @@ pub enum Request {
 
   /// Reconstructs the buffer's AST.
   Parse { buffer: String },
+
+  /// Highlights the buffer asynchronously.
+  Highlight { buffer: String },
 }
 
 pub struct Reader {

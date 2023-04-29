@@ -1,0 +1,4 @@
+[language.rust.faces]
+attribute = "meta"
+string = "string"
+function = "function"
