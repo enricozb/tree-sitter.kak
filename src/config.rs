@@ -53,10 +53,10 @@ struct Server {
 impl Server {
   /// Loads a `Server` config from a file.
   pub fn from_file(file: &Path) -> Result<Self> {
-    if !file.exists() {
-      Ok(Self::default())
+    if file.exists() {
+      Ok(toml::from_str(&fs::read_to_string(file)?)?)
     } else {
-      Ok(toml::from_str(&fs::read_to_string(&file)?)?)
+      Ok(Self::default())
     }
   }
 }

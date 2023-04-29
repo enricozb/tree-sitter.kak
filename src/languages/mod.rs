@@ -15,7 +15,7 @@ pub struct Language {
 impl Language {
   /// Creates a new `Language`.
   pub fn new(language: TSLanguage, query: Option<&str>) -> Result<Self> {
-    let highlight_query = query.map(|query| TSQuery::new(language.clone(), query)).transpose()?;
+    let highlight_query = query.map(|query| TSQuery::new(language, query)).transpose()?;
 
     Ok(Self {
       language,
@@ -38,14 +38,14 @@ impl<'a> TryFrom<&'a str> for Language {
   }
 }
 
-impl Into<TSLanguage> for Language {
-  fn into(self) -> TSLanguage {
-    self.language
+impl From<Language> for TSLanguage {
+  fn from(language: Language) -> Self {
+    language.language
   }
 }
 
-impl Into<Option<TSQuery>> for Language {
-  fn into(self) -> Option<TSQuery> {
-    self.highlight_query
+impl From<Language> for Option<TSQuery> {
+  fn from(language: Language) -> Self {
+    language.highlight_query
   }
 }

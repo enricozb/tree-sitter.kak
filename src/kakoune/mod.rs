@@ -10,7 +10,7 @@ use std::{
 use anyhow::{anyhow, Result};
 
 use self::connection::Connection;
-use crate::highlight::range::RangeSpecs;
+use crate::highlight::range::Specs as RangeSpecs;
 
 /// A struct for interacting with a kakoune instance.
 pub struct Kakoune {
@@ -62,7 +62,7 @@ impl Kakoune {
     Ok(())
   }
 
-  pub fn highlight(&mut self, buffer: &str, ranges: RangeSpecs) -> Result<()> {
+  pub fn highlight(&mut self, buffer: &str, ranges: &RangeSpecs) -> Result<()> {
     self.send_command(buffer, "set-option buffer tree_sitter_ranges_spare %val{timestamp}")?;
 
     // TODO(enricozb): determine if chunking is necessary

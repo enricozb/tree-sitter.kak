@@ -2,23 +2,23 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use tree_sitter::{Point as TSPoint, Range as TSRange};
 
-pub type RangeSpecs<'a> = Vec<RangeSpec<'a>>;
+pub type Specs<'a> = Vec<Spec<'a>>;
 
 #[derive(Clone)]
-pub struct RangeSpec<'a> {
+pub struct Spec<'a> {
   pub start: Point,
   pub end: Point,
   pub face: &'a str,
 }
 
-impl<'a> RangeSpec<'a> {
-  /// Creates a new `RangeSpec`.
+impl<'a> Spec<'a> {
+  /// Creates a new `Spec`.
   pub fn new(start: Point, end: Point, face: &'a str) -> Self {
-    Self { start, end: end, face }
+    Self { start, end, face }
   }
 }
 
-impl<'a> From<(TSRange, &'a String)> for RangeSpec<'a> {
+impl<'a> From<(TSRange, &'a String)> for Spec<'a> {
   fn from((range, face): (TSRange, &'a String)) -> Self {
     let start: Point = range.start_point.into();
     let end: Point = range.end_point.into();
@@ -31,7 +31,7 @@ impl<'a> From<(TSRange, &'a String)> for RangeSpec<'a> {
   }
 }
 
-impl<'a> Display for RangeSpec<'a> {
+impl<'a> Display for Spec<'a> {
   fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
     write!(
       f,
@@ -43,7 +43,7 @@ impl<'a> Display for RangeSpec<'a> {
   }
 }
 
-/// A start or end point for a [`RangeSpec`].
+/// A start or end point for a [`Spec`].
 ///
 /// Points are 1-indexed.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]

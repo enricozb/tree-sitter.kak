@@ -167,11 +167,7 @@ impl Server {
       // TODO(enricozb): spawn async thread, or drop the connection.
       let range_specs = highlighter.highlight(faces, &buffer.tree, &content_file)?;
 
-      for range_spec in &range_specs {
-        println!("computed: {range_spec}");
-      }
-
-      self.kakoune.highlight(bufname, range_specs)?;
+      self.kakoune.highlight(bufname, &range_specs)?;
     }
 
     Ok(())

@@ -5,7 +5,7 @@ use std::{collections::HashMap, fs, path::Path};
 use anyhow::{anyhow, Result};
 use tree_sitter::{Query, QueryCursor, Tree};
 
-use self::range::{Point, RangeSpec, RangeSpecs};
+use self::range::{Point, Spec as RangeSpec, Specs as RangeSpecs};
 use crate::languages::Language;
 
 /// A syntax highlighter.
@@ -44,15 +44,11 @@ impl Highlighter {
         let ts_range = capture.node.range();
         let capture_name = &capture_names[capture.index as usize];
 
-        let face = if let Some(face) = faces.get(capture_name) {
-          face
-        } else {
+        let Some(face) = faces.get(capture_name) else {
           continue;
         };
 
         let range = RangeSpec::from((ts_range, face));
-
-        println!("orig: {}", range);
 
         if let Some(last) = capture_stack.last().cloned() {
           if range.start < last.end && last.start != range.start {
@@ -62,7 +58,7 @@ impl Highlighter {
             cur_loc = last.end.next();
             capture_stack.pop();
 
-            while capture_stack.last().map(|last| last.end < range.start).unwrap_or(false) {
+            while capture_stack.last().map_or(false, |last| last.end < range.start) {
               let last = capture_stack.pop().unwrap();
               if cur_loc <= last.end {
                 highlights.push(RangeSpec::new(cur_loc, last.end, last.face));
@@ -90,7 +86,7 @@ impl Highlighter {
     for capture in capture_stack.into_iter().rev() {
       if cur_loc <= capture.end {
         highlights.push(RangeSpec::new(cur_loc, capture.end, capture.face));
-        cur_loc = capture.end.next()
+        cur_loc = capture.end.next();
       }
     }
 
