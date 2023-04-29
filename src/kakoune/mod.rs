@@ -10,7 +10,7 @@ use std::{
 use anyhow::{anyhow, Result};
 
 use self::connection::Connection;
-use crate::highlight::RangeSpecs;
+use crate::highlight::range::RangeSpecs;
 
 /// A struct for interacting with a kakoune instance.
 pub struct Kakoune {

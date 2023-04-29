@@ -2,3 +2,4 @@
 attribute = "meta"
 string = "string"
 function = "function"
+comment = "comment"

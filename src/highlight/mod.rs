@@ -1,13 +1,11 @@
-use std::{
-  collections::HashMap,
-  fmt::{Display, Formatter, Result as FmtResult},
-  fs,
-  path::Path,
-};
+pub mod range;
+
+use std::{collections::HashMap, fs, path::Path};
 
 use anyhow::{anyhow, Result};
-use tree_sitter::{Point, Query, QueryCursor, Range as TSRange, Tree};
+use tree_sitter::{Query, QueryCursor, Tree};
 
+use self::range::{RangeSpec, RangeSpecs};
 use crate::languages::Language;
 
 /// A syntax highlighter.
@@ -24,6 +22,7 @@ impl Highlighter {
     Ok(Self { query })
   }
 
+  /// Returns the `RangeSpecs` for highlighting.
   pub fn highlight<'a>(
     &self,
     faces: &'a HashMap<String, String>,
@@ -80,59 +79,5 @@ impl Highlighter {
     }
 
     Ok(highlights)
-  }
-}
-
-pub type RangeSpecs<'a> = Vec<RangeSpec<'a>>;
-
-#[derive(Clone)]
-pub struct RangeSpec<'a> {
-  start: Point,
-  end: Point,
-  face: &'a str,
-}
-
-impl<'a> RangeSpec<'a> {
-  /// Creates a new `RangeSpec`.
-  fn new(start: Point, end: Point, face: &'a str) -> Self {
-    Self { start, end, face }
-  }
-
-  /// Returns a 1-indexed `Point`, assuming this is a start point.
-  fn one_index_start(point: Point) -> Point {
-    Point {
-      row: point.row + 1,
-      column: point.column + 1,
-    }
-  }
-
-  /// Returns a 1-indexed `Point`, assuming this is an end point.
-  fn one_index_end(point: Point) -> Point {
-    Point {
-      row: point.row + 1,
-      column: point.column,
-    }
-  }
-}
-
-impl<'a> From<(TSRange, &'a String)> for RangeSpec<'a> {
-  fn from((range, face): (TSRange, &'a String)) -> Self {
-    Self {
-      start: Self::one_index_start(range.start_point),
-      end: Self::one_index_end(range.end_point),
-      face,
-    }
-  }
-}
-
-impl<'a> Display for RangeSpec<'a> {
-  fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-    write!(
-      f,
-      "{}.{},{}.{}|{}",
-      self.start.row, self.start.column, self.end.row, self.end.column, self.face
-    )?;
-
-    Ok(())
   }
 }
