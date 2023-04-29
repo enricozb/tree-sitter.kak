@@ -98,7 +98,7 @@ impl Server {
   /// Sets a buffer's language.
   fn set_buffer_language(&mut self, buffer: String, language: String) -> Result<()> {
     let content_file = self.kakoune.content_file(&buffer)?;
-    let parser = self.get_parser(language.clone())?;
+    let parser = self.get_parser(&language)?;
     let tree = parser.parse_file(&content_file)?;
 
     self.buffers.insert(buffer, Buffer::new(language, tree));
@@ -114,7 +114,7 @@ impl Server {
     let mut buf = self.buffers.remove(&buffer).ok_or(anyhow!("unknown buffer {buffer}"))?;
 
     let content_file = self.kakoune.content_file(&buffer)?;
-    buf.tree = self.get_parser(buf.language.clone())?.parse_file(&content_file)?;
+    buf.tree = self.get_parser(&buf.language)?.parse_file(&content_file)?;
 
     self.buffers.insert(buffer, buf);
 
@@ -122,10 +122,10 @@ impl Server {
   }
 
   /// Returns the parser for the provided language, creating one if needed.
-  fn get_parser(&mut self, language: String) -> Result<&mut Parser> {
-    let parser = match self.parsers.entry(language.clone()) {
+  fn get_parser(&mut self, language: &str) -> Result<&mut Parser> {
+    let parser = match self.parsers.entry(language.to_string()) {
       Entry::Occupied(o) => o.into_mut(),
-      Entry::Vacant(v) => v.insert(Parser::new(&language).context("new parser")?),
+      Entry::Vacant(v) => v.insert(Parser::new(language).context("new parser")?),
     };
 
     Ok(parser)
