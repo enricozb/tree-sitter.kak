@@ -13,7 +13,6 @@ serde = { version = "1.0.160", features = ["derive"] }
 tempfile = "3.5.0"
 toml = "0.7.3"
 tree-sitter = "0.20.10"
-tree-sitter-highlight = "0.20.1"
 tree-sitter-rust = "0.20.3"
 
 [build-dependencies]

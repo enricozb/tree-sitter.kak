@@ -1,5 +1,4 @@
 pub mod connection;
-pub mod range;
 
 use std::{collections::HashMap, fs, path::PathBuf};
 
