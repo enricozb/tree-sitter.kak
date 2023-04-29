@@ -1,22 +1,45 @@
-use std::{collections::HashMap, fs, path::Path};
+use std::{
+  collections::HashMap,
+  fs,
+  path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use serde::Deserialize;
 
 /// Server configuration.
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 pub struct Config {
+  file: PathBuf,
   language: HashMap<String, Language>,
 }
 
 impl Config {
-  /// Parses a `Config` from a file.
-  pub fn from_file(path: &Path) -> Result<Self> {
-    if !path.exists() {
-      return Ok(Config::default());
+  /// Creates an empty `Config`.
+  pub fn new(file: PathBuf) -> Self {
+    Self {
+      file,
+      language: HashMap::new(),
+    }
+  }
+
+  /// Loads a `Config` from a file.
+  pub fn from_file(file: &Path) -> Result<Self> {
+    let mut config = Self::new(file.to_path_buf());
+    config.reload()?;
+
+    Ok(config)
+  }
+
+  /// Reloads a `Config` from its file.
+  pub fn reload(&mut self) -> Result<()> {
+    if !self.file.exists() {
+      self.language = HashMap::new();
     }
 
-    Ok(toml::from_str(&fs::read_to_string(path)?)?)
+    self.language = toml::from_str(&fs::read_to_string(&self.file)?)?;
+
+    Ok(())
   }
 
   /// Get the faces for a language.

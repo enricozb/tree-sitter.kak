@@ -82,6 +82,8 @@ impl Server {
   /// Handle a single request
   fn handle_request(&mut self, connection: &mut Connection, request: Request) -> Result<()> {
     match request {
+      Request::ReloadConfig => {}
+
       Request::SaveBuffer { buffer } => {
         self.save_buffer(connection, &buffer)?;
       }

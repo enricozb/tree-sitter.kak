@@ -9,6 +9,9 @@ use crate::kakoune::connection::Connection;
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum Request {
+  /// Reloads the config file.
+  ReloadConfig,
+
   /// Responds with kakoune commands to write the buffer to disk.
   SaveBuffer { buffer: String },
 
