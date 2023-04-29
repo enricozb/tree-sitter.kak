@@ -10,7 +10,7 @@ define-command -override tree-sitter-enable -docstring "start the tree-sitter se
     if [ -z "$kak_opt_tree_sitter_socket" ]; then
       printf \
         "set-option global tree_sitter_socket '%s'\n" \
-        $(kak-tree-sitter --daemonize --session-id $kak_session)
+        $(kak-tree-sitter --daemonize --session $kak_session)
     fi
   }
 
