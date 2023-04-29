@@ -1,5 +1,9 @@
 [language.rust.faces]
 attribute = "meta"
-string = "string"
-function = "function"
 comment = "comment"
+function = "function"
+keyword = "keyword"
+operator = "operator"
+string = "string"
+type = "type"
+"type.builtin" = "type"

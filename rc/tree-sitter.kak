@@ -5,8 +5,6 @@ declare-option str tree_sitter_socket
 declare-option -hidden range-specs tree_sitter_ranges
 declare-option -hidden range-specs tree_sitter_ranges_spare
 
-add-highlighter buffer/ ranges tree_sitter_ranges
-
 define-command -override tree-sitter-enable -docstring "start the tree-sitter server" %{
   evaluate-commands %sh{
     if [ -z "$kak_opt_tree_sitter_socket" ]; then
@@ -28,6 +26,13 @@ define-command -override tree-sitter-enable -docstring "start the tree-sitter se
     tree-sitter-buffer-highlight
   }
 
+  hook -group tree-sitter buffer InsertChar .* %{
+    tree-sitter-buffer-save
+    tree-sitter-buffer-parse
+    tree-sitter-buffer-highlight
+  }
+
+
   hook -group tree-sitter buffer ModeChange 'pop:insert:normal' %{
     tree-sitter-buffer-save
     tree-sitter-buffer-parse
@@ -40,12 +45,22 @@ define-command -override tree-sitter-enable -docstring "start the tree-sitter se
 define-command -override tree-sitter-buffer-new -docstring "create a new buffer" %{
   tree-sitter-buffer-save
   tree-sitter-buffer-set-language
+
+  try %{
+    add-highlighter buffer/ ranges tree_sitter_ranges
+  }
 }
 
 
 # ────────────── tree-sitter requests ──────────────
 define-command -override -hidden tree-sitter-buffer-request -docstring "send request to tree-sitter" -params 1 %{
   evaluate-commands %sh{ echo "$1" | socat - $kak_opt_tree_sitter_socket }
+}
+
+define-command -override -hidden tree-sitter-reload %{
+  tree-sitter-buffer-request "
+    type   = 'reload_config'
+  "
 }
 
 define-command -override -hidden tree-sitter-buffer-save  %{

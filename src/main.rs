@@ -15,7 +15,7 @@ use clap::Parser;
 #[derive(Parser)]
 pub struct Args {
   // TODO(enricozb): make this optional, and make commands appear on command-line
-  /// The kakoune session id to send commands to
+  /// The kakoune session id to send commands to.
   #[arg(short, long)]
   session: i32,
 

@@ -51,7 +51,7 @@ impl Server {
     println!("{}", socket.to_str().ok_or(anyhow!("non-unicode socket path"))?);
 
     Ok(Self {
-      config: Config::from_file(&args.config)?,
+      config: Config::from_file(args.config.clone())?,
       requests: RequestReader::new(&socket)?,
       kakoune: Kakoune::new(args.session, tempdir.path().join("buffers"))?,
       parsers: HashMap::new(),
@@ -82,7 +82,9 @@ impl Server {
   /// Handle a single request
   fn handle_request(&mut self, connection: &mut Connection, request: Request) -> Result<()> {
     match request {
-      Request::ReloadConfig => {}
+      Request::ReloadConfig => {
+        self.config.reload()?;
+      }
 
       Request::SaveBuffer { buffer } => {
         self.save_buffer(connection, &buffer)?;
