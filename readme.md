@@ -34,10 +34,10 @@ keyword = "keyword"
 operator = "operator"
 string = "string"
 type = "type"
-"type.builtin" = "type"
+type-builtin = "type"
 constructor = "value"
 constant = "value"
-"constant.builtin" = "value"
+constant-builtin = "value"
 ```
 The captures are defined in the languages [query file](src/languages/highlight/), which are currently shipped
 with the library instead of being configurable.
