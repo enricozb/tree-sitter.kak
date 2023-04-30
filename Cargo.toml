@@ -2,7 +2,7 @@
 name = "kak-tree-sitter"
 description = "kakoune tree-sitter server"
 license = "CC0-1.0"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 readme = "readme.md"
 repository = "https://github.com/enricozb/tree-sitter.kak"
