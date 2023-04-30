@@ -1,6 +1,6 @@
 use std::{
   collections::{hash_map::Entry, HashMap},
-  fs,
+  fs::{self, File},
   path::PathBuf,
 };
 
@@ -193,7 +193,10 @@ pub fn start(args: &Args) -> Result<()> {
   let mut server = Server::new(args)?;
 
   if args.daemonize {
-    let daemon = Daemonize::new().pid_file(server.pid_file());
+    let daemon = Daemonize::new()
+      .stdout(File::create(server.tempdir.path().join("stdout"))?)
+      .stderr(File::create(server.tempdir.path().join("stderr"))?)
+      .pid_file(server.pid_file());
     daemon.start()?;
   }
 
