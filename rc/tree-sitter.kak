@@ -38,6 +38,7 @@ define-command -override tree-sitter-enable -docstring "start the tree-sitter se
 define-command -override tree-sitter-buffer-new -docstring "create a new buffer" %{
   tree-sitter-buffer-save
   tree-sitter-buffer-set-language
+  tree-sitter-buffer-highlight
 
   try %{
     add-highlighter buffer/ ranges tree_sitter_ranges
@@ -46,25 +47,25 @@ define-command -override tree-sitter-buffer-new -docstring "create a new buffer"
 
 
 # ────────────── tree-sitter requests ──────────────
-define-command -override -hidden tree-sitter-buffer-request -docstring "send request to tree-sitter" -params 1 %{
+define-command -override -hidden tree-sitter-request -docstring "send request to tree-sitter" -params 1 %{
   evaluate-commands %sh{ echo "$1" | socat - $kak_opt_tree_sitter_socket }
 }
 
 define-command -override tree-sitter-reload %{
-  tree-sitter-buffer-request "
+  tree-sitter-request "
     type   = 'reload_config'
   "
 }
 
 define-command -override -hidden tree-sitter-buffer-save  %{
-  tree-sitter-buffer-request "
+  tree-sitter-request "
     type   = 'save_buffer'
     buffer = '%val{bufname}'
   "
 }
 
 define-command -override -hidden tree-sitter-buffer-set-language %{
-  tree-sitter-buffer-request "
+  tree-sitter-request "
     type     = 'set_language'
     buffer   = '%val{bufname}'
     language = '%opt{filetype}'
@@ -72,14 +73,14 @@ define-command -override -hidden tree-sitter-buffer-set-language %{
 }
 
 define-command -override -hidden tree-sitter-buffer-parse %{
-  tree-sitter-buffer-request "
+  tree-sitter-request "
     type   = 'parse'
     buffer = '%val{bufname}'
   "
 }
 
 define-command -override -hidden tree-sitter-buffer-highlight %{
-  tree-sitter-buffer-request "
+  tree-sitter-request "
     type   = 'highlight'
     buffer = '%val{bufname}'
   "
