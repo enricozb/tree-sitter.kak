@@ -172,14 +172,20 @@ impl Server {
       bail!("buffer {bufname} not parsed");
     };
 
+    println!("highlighting {} bytes", buffer.content.len());
+
     let highlighter = match self.highlighters.entry(buffer.language.clone()) {
       Entry::Occupied(o) => o.into_mut(),
       Entry::Vacant(v) => v.insert(Highlighter::new(&buffer.language).context("new highlighter")?),
     };
 
     if let Some(faces) = self.config.faces(&buffer.language) {
+      println!("have faces");
+
       // TODO(enricozb): spawn async thread, or drop the connection.
       let range_specs = highlighter.highlight(faces, tree, &buffer.content);
+
+      println!("found {} range-specs", range_specs.len());
 
       self.kakoune.highlight(bufname, &range_specs)?;
     }

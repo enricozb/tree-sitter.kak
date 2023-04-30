@@ -56,6 +56,7 @@ impl Kakoune {
 
   /// Highlights a buffer at a timestamp.
   pub fn highlight(&mut self, buffer: &str, ranges: &RangeSpecs) -> Result<()> {
+    // TODO(enricozb): use the correct timestamp
     self.send_command(
       Some(buffer),
       "set-option buffer tree_sitter_ranges_spare %val{timestamp}",
