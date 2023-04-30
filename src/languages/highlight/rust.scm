@@ -37,7 +37,7 @@
   function: (identifier) @function)
 (call_expression
   function: (field_expression
-    field: (field_identifier) @function.method))
+    field: (field_identifier) @function-method))
 (call_expression
   function: (scoped_identifier
     "::"
@@ -50,11 +50,11 @@
     name: (identifier) @function))
 (generic_function
   function: (field_expression
-    field: (field_identifier) @function.method))
+    field: (field_identifier) @function-method))
 
 (macro_invocation
-  macro: (identifier) @function.macro
-  "!" @function.macro)
+  macro: (identifier) @function-macro
+  "!" @function-macro)
 
 ; Function definitions
 
@@ -64,33 +64,33 @@
 ; Other identifiers
 
 (type_identifier) @type
-(primitive_type) @type.builtin
+(primitive_type) @type-builtin
 (field_identifier) @property
 
 (line_comment) @comment
 (block_comment) @comment
 
-"(" @punctuation.bracket
-")" @punctuation.bracket
-"[" @punctuation.bracket
-"]" @punctuation.bracket
-"{" @punctuation.bracket
-"}" @punctuation.bracket
+"(" @punctuation-bracket
+")" @punctuation-bracket
+"[" @punctuation-bracket
+"]" @punctuation-bracket
+"{" @punctuation-bracket
+"}" @punctuation-bracket
 
 (type_arguments
-  "<" @punctuation.bracket
-  ">" @punctuation.bracket)
+  "<" @punctuation-bracket
+  ">" @punctuation-bracket)
 (type_parameters
-  "<" @punctuation.bracket
-  ">" @punctuation.bracket)
+  "<" @punctuation-bracket
+  ">" @punctuation-bracket)
 
-"::" @punctuation.delimiter
-":" @punctuation.delimiter
-"." @punctuation.delimiter
-"," @punctuation.delimiter
-";" @punctuation.delimiter
+"::" @punctuation-delimiter
+":" @punctuation-delimiter
+"." @punctuation-delimiter
+"," @punctuation-delimiter
+";" @punctuation-delimiter
 
-(parameter (identifier) @variable.parameter)
+(parameter (identifier) @variable-parameter)
 
 (lifetime (identifier) @label)
 
@@ -135,15 +135,15 @@
 (scoped_identifier (self) @keyword)
 (super) @keyword
 
-(self) @variable.builtin
+(self) @variable-builtin
 
 (char_literal) @string
 (string_literal) @string
 (raw_string_literal) @string
 
-(boolean_literal) @constant.builtin
-(integer_literal) @constant.builtin
-(float_literal) @constant.builtin
+(boolean_literal) @constant-builtin
+(integer_literal) @constant-builtin
+(float_literal) @constant-builtin
 
 (escape_sequence) @escape
 
