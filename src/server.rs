@@ -63,6 +63,7 @@ impl Server {
       tempdir,
     };
 
+    server.kakoune.debug(&format!("loading config {:?}", &args.config))?;
     server.kakoune.send_socket(&socket).context("send socket")?;
 
     Ok(server)
@@ -77,7 +78,7 @@ impl Server {
 
   /// Runs the server.
   fn run(&mut self) -> Result<()> {
-    self.kakoune.debug("kak-tree-sitter started")?;
+    self.kakoune.debug("started")?;
 
     loop {
       let (mut connection, request) = self.requests.listen().context("listen")?;

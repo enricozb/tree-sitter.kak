@@ -15,9 +15,8 @@ declare-option -hidden range-specs tree_sitter_ranges_spare
 define-command -override tree-sitter-enable-buffer -docstring "start the tree-sitter server" %{
   evaluate-commands %sh{
     if [ -z "$kak_opt_tree_sitter_socket" ]; then
-      if [ -n "$kak_tree_sitter_config" ]; then
-        echo "echo -debug 'kak-tree-sitter: using config $kak_tree_sitter_config'"
-        config="--config $kak_tree_sitter_config"
+      if [ -n "$kak_opt_tree_sitter_config" ]; then
+        config="--config $kak_opt_tree_sitter_config"
       fi
 
       printf "set-option global tree_sitter_socket '%s'\n" \
