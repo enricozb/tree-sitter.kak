@@ -6,6 +6,9 @@
 A [Tree-sitter][1] server that keeps parsed ASTs in memory. This is useful for generalizing plugins that
 want to query the AST. Highlighting and structural selections are two main motivating examples.
 
+## Highlighting Demo
+[![asciicast](https://asciinema.org/a/1udaqC8SwHaJuyRKPjuOsqJe0.svg)](https://asciinema.org/a/1udaqC8SwHaJuyRKPjuOsqJe0)
+
 ### Usage
 The package **does not** install a [configuration file](./config/config.toml) automatically. So you must
 put one wherever you like and tell the plugin where that configuration file is:
