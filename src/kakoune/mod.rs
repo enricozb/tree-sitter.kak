@@ -56,25 +56,12 @@ impl Kakoune {
 
   /// Highlights a buffer at a timestamp.
   pub fn highlight(&mut self, buffer: &str, ranges: &RangeSpecs) -> Result<()> {
+    let ranges: String = ranges.iter().map(|range| format!("'{range}' ")).collect();
+
     // TODO(enricozb): use the correct timestamp
     self.send_command(
       Some(buffer),
-      "set-option buffer tree_sitter_ranges_spare %val{timestamp}",
-    )?;
-
-    // TODO(enricozb): determine if chunking is necessary
-    for ranges in ranges.chunks(20) {
-      let ranges: String = ranges.iter().map(|range| format!("'{range}' ")).collect();
-
-      self.send_command(
-        Some(buffer),
-        &format!("set-option -add buffer tree_sitter_ranges_spare {ranges}"),
-      )?;
-    }
-
-    self.send_command(
-      Some(buffer),
-      "set-option buffer tree_sitter_ranges %opt{tree_sitter_ranges_spare}",
+      &format!("set-option buffer tree_sitter_ranges %val{{timestamp}} {ranges}"),
     )?;
 
     Ok(())
