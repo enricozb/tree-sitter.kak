@@ -48,7 +48,7 @@ impl Kakoune {
 
   /// Creates a new buffer directory.
   pub fn new_buffer(&mut self, connection: &mut Connection, buffer: &str) -> Result<()> {
-    let buffer_dir = self.buffer_dir(&buffer)?;
+    let buffer_dir = self.buffer_dir(buffer)?;
     connection.send_sync_command(&format!("set-option buffer tree_sitter_dir {buffer_dir:?}"))?;
 
     Ok(())

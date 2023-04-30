@@ -179,7 +179,7 @@ impl Server {
 
     if let Some(faces) = self.config.faces(&buffer.language) {
       // TODO(enricozb): spawn async thread, or drop the connection.
-      let range_specs = highlighter.highlight(faces, &tree, &buffer.content)?;
+      let range_specs = highlighter.highlight(faces, tree, &buffer.content);
 
       self.kakoune.highlight(bufname, &range_specs)?;
     }

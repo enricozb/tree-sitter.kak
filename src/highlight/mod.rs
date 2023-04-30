@@ -23,12 +23,7 @@ impl Highlighter {
   }
 
   /// Returns the `RangeSpecs` for highlighting.
-  pub fn highlight<'a>(
-    &self,
-    faces: &'a HashMap<String, String>,
-    tree: &Tree,
-    content: &[u8],
-  ) -> Result<RangeSpecs<'a>> {
+  pub fn highlight<'a>(&self, faces: &'a HashMap<String, String>, tree: &Tree, content: &[u8]) -> RangeSpecs<'a> {
     let mut cursor = QueryCursor::new();
     let captures = cursor.captures(&self.query, tree.root_node(), content);
     let capture_names = self.query.capture_names();
@@ -88,6 +83,6 @@ impl Highlighter {
       }
     }
 
-    Ok(highlights)
+    highlights
   }
 }
