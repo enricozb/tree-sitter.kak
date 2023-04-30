@@ -77,11 +77,13 @@ impl Server {
 
   /// Runs the server.
   fn run(&mut self) -> Result<()> {
+    self.kakoune.debug("kak-tree-sitter started")?;
+
     loop {
       let (mut connection, request) = self.requests.listen().context("listen")?;
 
       if let Err(err) = self.handle_request(&mut connection, request) {
-        self.kakoune.log_error(&format!("{err:?}")).context("log_error")?;
+        self.kakoune.debug(&format!("{err:?}")).context("log_error")?;
       }
     }
   }
@@ -188,6 +190,8 @@ impl Server {
       println!("found {} range-specs", range_specs.len());
 
       self.kakoune.highlight(bufname, &range_specs)?;
+    } else {
+      println!("no faces found");
     }
 
     Ok(())
@@ -203,6 +207,7 @@ pub fn start(args: &Args) -> Result<()> {
       .stdout(File::create(server.tempdir.path().join("stdout"))?)
       .stderr(File::create(server.tempdir.path().join("stderr"))?)
       .pid_file(server.pid_file());
+
     daemon.start()?;
   }
 

@@ -1,4 +1,5 @@
 # ────────────── initialization ──────────────
+declare-option str tree_sitter_config
 declare-option str tree_sitter_socket
 
 # directory to write buffer contents to.
@@ -14,9 +15,13 @@ declare-option -hidden range-specs tree_sitter_ranges_spare
 define-command -override tree-sitter-enable-buffer -docstring "start the tree-sitter server" %{
   evaluate-commands %sh{
     if [ -z "$kak_opt_tree_sitter_socket" ]; then
-      printf \
-        "set-option global tree_sitter_socket '%s'\n" \
-        $(kak-tree-sitter --daemonize --session $kak_session)
+      if [ -n "$kak_tree_sitter_config" ]; then
+        echo "echo -debug 'kak-tree-sitter: using config $kak_tree_sitter_config'"
+        config="--config $kak_tree_sitter_config"
+      fi
+
+      printf "set-option global tree_sitter_socket '%s'\n" \
+        $(kak-tree-sitter --daemonize --session $kak_session $config)
     fi
   }
 

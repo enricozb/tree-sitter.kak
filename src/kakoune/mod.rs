@@ -119,8 +119,8 @@ impl Kakoune {
     Ok(())
   }
 
-  /// Log an error to the kakoune instance.
-  pub fn log_error(&mut self, message: &str) -> Result<()> {
+  /// Log a debug message to the kakoune instance.
+  pub fn debug(&mut self, message: &str) -> Result<()> {
     let mut kak = Command::new("kak")
       .arg("-p")
       .arg(self.session.to_string())

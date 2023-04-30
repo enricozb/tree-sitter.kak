@@ -29,6 +29,8 @@ impl Config {
   pub fn reload(&mut self) -> Result<()> {
     self.config = Server::from_file(&self.file)?;
 
+    println!("reloaded config from file: {:?}", self.file);
+
     Ok(())
   }
 
