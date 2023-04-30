@@ -31,6 +31,7 @@ define-command -override tree-sitter-enable-buffer -docstring "start the tree-si
   hook -group tree-sitter buffer NormalIdle   .* tree-sitter-refresh
   hook -group tree-sitter buffer InsertChar   .* tree-sitter-refresh
   hook -group tree-sitter buffer InsertDelete .* tree-sitter-refresh
+  hook -group tree-sitter buffer BufReload    .* tree-sitter-refresh
 
   hook -group tree-sitter buffer BufSetOption filetype=.* %{
     tree-sitter-set-language
@@ -38,7 +39,9 @@ define-command -override tree-sitter-enable-buffer -docstring "start the tree-si
   }
 
   # 3. add highlighter
-  add-highlighter buffer ranges tree_sitter_ranges
+  try %{
+    add-highlighter buffer/ ranges tree_sitter_ranges
+  }
 }
 
 define-command -override tree-sitter-refresh %{
@@ -46,7 +49,7 @@ define-command -override tree-sitter-refresh %{
     if [ "$kak_timestamp" != "$kak_opt_tree_sitter_timestamp" ]; then
       echo 'write "%opt{tree_sitter_dir}/%val{timestamp}"'
       echo 'tree-sitter-parse-buffer'
-  echo 'tree-sitter-highlight-buffer'
+      echo 'tree-sitter-highlight-buffer'
       echo 'set-option buffer tree_sitter_timestamp %val{timestamp}'
     fi
   }

@@ -49,6 +49,10 @@ impl Server {
     let tempdir = tempfile::tempdir()?;
     let socket = tempdir.path().join("socket");
 
+    if args.daemonize {
+      println!("{socket:?}");
+    }
+
     let mut server = Self {
       config: Config::from_file(args.config.clone())?,
       requests: RequestReader::new(&socket)?,
@@ -101,8 +105,8 @@ impl Server {
         self.parse_buffer(buffer, timestamp).context("parse buffer")?;
       }
 
-      Request::Highlight { buffer, timestamp } => {
-        self.highlight(&buffer, timestamp).context("highlight")?;
+      Request::Highlight { buffer } => {
+        self.highlight(&buffer).context("highlight")?;
       }
     }
 
@@ -161,7 +165,7 @@ impl Server {
   }
 
   /// Highlights a buffer at a timestamp.
-  fn highlight(&mut self, bufname: &str, timestamp: usize) -> Result<()> {
+  fn highlight(&mut self, bufname: &str) -> Result<()> {
     let buffer = self.buffers.get(bufname).ok_or(anyhow!("unknown buffer: {bufname}"))?;
 
     let Some(ref tree) = buffer.tree else {

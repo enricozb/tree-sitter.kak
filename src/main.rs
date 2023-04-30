@@ -20,6 +20,8 @@ pub struct Args {
   session: i32,
 
   /// Whether to run in the background.
+  ///
+  /// The socket will be printed if --daemonize is set.
   #[arg(short, long)]
   daemonize: bool,
 
