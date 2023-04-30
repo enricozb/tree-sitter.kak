@@ -12,17 +12,18 @@ pub enum Request {
   /// Reloads the config file.
   ReloadConfig,
 
-  /// Responds with kakoune commands to write the buffer to disk.
-  SaveBuffer { buffer: String },
+  // TODO(enricozb): change references from `buffer` to `bufname`
+  /// Creates a new buffer, Responds with path for kakoune to write buffer contents to.
+  NewBuffer { buffer: String, language: String },
 
   /// Sets a buffer's language.
   SetLanguage { buffer: String, language: String },
 
   /// Reconstructs the buffer's AST.
-  Parse { buffer: String },
+  ParseBuffer { buffer: String, timestamp: usize },
 
   /// Highlights the buffer asynchronously.
-  Highlight { buffer: String },
+  Highlight { buffer: String, timestamp: usize },
 }
 
 pub struct Reader {

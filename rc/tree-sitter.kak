@@ -1,5 +1,10 @@
 # ────────────── initialization ──────────────
 declare-option str tree_sitter_socket
+
+# directory to write buffer contents to.
+declare-option -hidden str tree_sitter_dir
+
+# timestamp to debounce buffer change hooks.
 declare-option -hidden str tree_sitter_timestamp
 
 # used for highlighting
@@ -15,81 +20,82 @@ define-command -override tree-sitter-enable-buffer -docstring "start the tree-si
     fi
   }
 
+  # 0. remove any extant hooks
+  remove-hooks buffer tree-sitter
+
   # 1. send sync command to kak tree sitter to ask what buffer file to write to.
+  tree-sitter-new-buffer
+
   # 2. setup hooks to write constantly to that file.
-
-  tree-sitter-buffer-new
-
-  hook -group tree-sitter buffer BufSetOption filetype=.* %{
-    tree-sitter-buffer-set-language
-  }
-
   hook -group tree-sitter buffer InsertIdle   .* tree-sitter-refresh
   hook -group tree-sitter buffer NormalIdle   .* tree-sitter-refresh
   hook -group tree-sitter buffer InsertChar   .* tree-sitter-refresh
   hook -group tree-sitter buffer InsertDelete .* tree-sitter-refresh
+
+  hook -group tree-sitter buffer BufSetOption filetype=.* %{
+    tree-sitter-set-language
+    tree-sitter-refresh
+  }
+
+  # 3. add highlighter
+  add-highlighter buffer ranges tree_sitter_ranges
 }
 
 define-command -override tree-sitter-refresh %{
-  evaluate-commands %sh{
+  evaluate-commands -no-hooks %sh{
     if [ "$kak_timestamp" != "$kak_opt_tree_sitter_timestamp" ]; then
-      echo 'tree-sitter-buffer-save'
-      echo 'tree-sitter-buffer-parse'
-      echo 'tree-sitter-buffer-highlight'
+      echo 'write "%opt{tree_sitter_dir}/%val{timestamp}"'
+      echo 'tree-sitter-parse-buffer'
+  echo 'tree-sitter-highlight-buffer'
       echo 'set-option buffer tree_sitter_timestamp %val{timestamp}'
     fi
   }
 }
 
 
-# ────────────── tree-sitter commands ──────────────
-define-command -override tree-sitter-buffer-new -docstring "create a new buffer" %{
-  tree-sitter-buffer-save
-  tree-sitter-buffer-set-language
-  tree-sitter-buffer-highlight
-
-  try %{
-    add-highlighter buffer/ ranges tree_sitter_ranges
-  }
+# ────────────── tree-sitter requests ──────────────
+define-command -override -hidden tree-sitter-sync-request -docstring "send sync request to tree-sitter" -params 1 %{
+  evaluate-commands -no-hooks %sh{ echo "$1" | socat - UNIX-CONNECT:$kak_opt_tree_sitter_socket }
 }
 
-
-# ────────────── tree-sitter requests ──────────────
-define-command -override -hidden tree-sitter-request -docstring "send request to tree-sitter" -params 1 %{
+define-command -override -hidden tree-sitter-async-request -docstring "send async request to tree-sitter" -params 1 %{
   nop %sh{ { echo "$1" | socat - UNIX-CONNECT:$kak_opt_tree_sitter_socket; } > /dev/null 2>&1 < /dev/null & }
 }
 
-define-command -override tree-sitter-reload %{
-  tree-sitter-request "
-    type   = 'reload_config'
+define-command -override tree-sitter-reload-config %{
+  tree-sitter-async-request "
+    type = 'reload_config'
   "
 }
 
-define-command -override -hidden tree-sitter-buffer-save  %{
-  tree-sitter-request "
-    type   = 'save_buffer'
-    buffer = '%val{bufname}'
+define-command -override tree-sitter-new-buffer %{
+  tree-sitter-sync-request "
+    type     = 'new_buffer'
+    buffer   = '%val{bufname}'
+    language = '%opt{filetype}'
   "
 }
 
-define-command -override -hidden tree-sitter-buffer-set-language %{
-  tree-sitter-request "
+define-command -override tree-sitter-set-language %{
+  tree-sitter-async-request "
     type     = 'set_language'
     buffer   = '%val{bufname}'
     language = '%opt{filetype}'
   "
 }
 
-define-command -override -hidden tree-sitter-buffer-parse %{
-  tree-sitter-request "
-    type   = 'parse'
-    buffer = '%val{bufname}'
+define-command -override tree-sitter-parse-buffer %{
+  tree-sitter-async-request "
+    type      = 'parse_buffer'
+    buffer    = '%val{bufname}'
+    timestamp =  %val{timestamp}
   "
 }
 
-define-command -override -hidden tree-sitter-buffer-highlight %{
-  tree-sitter-request "
-    type   = 'highlight'
-    buffer = '%val{bufname}'
+define-command -override tree-sitter-highlight-buffer %{
+  tree-sitter-async-request "
+    type      = 'highlight'
+    buffer    = '%val{bufname}'
+    timestamp =  %val{timestamp}
   "
 }

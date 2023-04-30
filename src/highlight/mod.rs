@@ -1,6 +1,6 @@
 pub mod range;
 
-use std::{collections::HashMap, fs, path::Path};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use tree_sitter::{Query, QueryCursor, Tree};
@@ -27,12 +27,10 @@ impl Highlighter {
     &self,
     faces: &'a HashMap<String, String>,
     tree: &Tree,
-    content_file: &Path,
+    content: &[u8],
   ) -> Result<RangeSpecs<'a>> {
-    let source = fs::read(content_file)?;
-
     let mut cursor = QueryCursor::new();
-    let captures = cursor.captures(&self.query, tree.root_node(), source.as_slice());
+    let captures = cursor.captures(&self.query, tree.root_node(), content);
     let capture_names = self.query.capture_names();
 
     let mut capture_stack: RangeSpecs<'a> = RangeSpecs::new();

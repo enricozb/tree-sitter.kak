@@ -14,7 +14,7 @@ use crate::highlight::range::Specs as RangeSpecs;
 
 /// A struct for interacting with a kakoune instance.
 pub struct Kakoune {
-  // TODO(enricozb): change to usize
+  // TODO(enricozb): change to usize (or is it a string?)
   /// The session id for the kakoune instance.
   session: i32,
 
@@ -46,27 +46,15 @@ impl Kakoune {
     self.send_command(None, &format!("set-option global tree_sitter_socket {socket:?}"))
   }
 
-  /// Returns a path to where the contents of buffer should be stored.
-  ///
-  /// [`save_buffer`] must be called before [`content_file`] in order to ensure
-  /// that the returned path exists and has the expected contents.
-  pub fn content_file(&mut self, buffer: &str) -> Result<PathBuf> {
-    let buffer_dir = self.buffer_dir(buffer)?;
-
-    Ok(buffer_dir.join("content"))
-  }
-
-  /// Writes the buffer contents the diff from the previous buffer, returning the
-  /// path of the buffer's content.
-  pub fn save_buffer(&mut self, connection: &mut Connection, buffer: &str) -> Result<()> {
-    let content_file = self.content_file(buffer)?;
-
-    // TODO(enricozb): implement diffing between content files
-    self.send_command(Some(buffer), &format!("write -force {content_file:?}"))?;
+  /// Creates a new buffer directory.
+  pub fn new_buffer(&mut self, connection: &mut Connection, buffer: &str) -> Result<()> {
+    let buffer_dir = self.buffer_dir(&buffer)?;
+    connection.send_sync_command(&format!("set-option buffer tree_sitter_dir {buffer_dir:?}"))?;
 
     Ok(())
   }
 
+  /// Highlights a buffer at a timestamp.
   pub fn highlight(&mut self, buffer: &str, ranges: &RangeSpecs) -> Result<()> {
     self.send_command(
       Some(buffer),
@@ -91,8 +79,13 @@ impl Kakoune {
     Ok(())
   }
 
+  /// Returns a buffer's content file path.
+  pub fn content_file(&mut self, buffer: &str, timestamp: usize) -> Result<PathBuf> {
+    Ok(self.buffer_dir(buffer)?.join(timestamp.to_string()))
+  }
+
   /// Returns a buffer's directory, creating it if necessary.
-  fn buffer_dir(&mut self, buffer: &str) -> Result<PathBuf> {
+  pub fn buffer_dir(&mut self, buffer: &str) -> Result<PathBuf> {
     if let Some(dir) = self.buffers.get(buffer) {
       Ok(self.buffers_dir.join(dir.to_string()))
     } else {

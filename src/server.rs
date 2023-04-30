@@ -1,9 +1,10 @@
 use std::{
   collections::{hash_map::Entry, HashMap},
+  fs,
   path::PathBuf,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use daemonize::Daemonize;
 use tempfile::TempDir;
 
@@ -85,61 +86,64 @@ impl Server {
   fn handle_request(&mut self, connection: &mut Connection, request: Request) -> Result<()> {
     match request {
       Request::ReloadConfig => {
-        self.config.reload()?;
+        self.config.reload().context("reload")?;
       }
 
-      Request::SaveBuffer { buffer } => {
-        self.save_buffer(connection, &buffer)?;
+      Request::NewBuffer { buffer, language } => {
+        self.new_buffer(connection, buffer, language).context("new buffer")?;
       }
 
       Request::SetLanguage { buffer, language } => {
-        self.set_buffer_language(buffer, language)?;
+        self.set_buffer_language(&buffer, language).context("set language")?;
       }
 
-      Request::Parse { buffer } => {
-        self.parse_buffer(buffer)?;
+      Request::ParseBuffer { buffer, timestamp } => {
+        self.parse_buffer(buffer, timestamp).context("parse buffer")?;
       }
 
-      Request::Highlight { buffer } => {
-        // close early so user doesn't wait for parsing.
-        connection.close()?;
-        self.highlight(&buffer)?;
+      Request::Highlight { buffer, timestamp } => {
+        self.highlight(&buffer, timestamp).context("highlight")?;
       }
     }
 
     Ok(())
   }
 
-  /// Saves a buffer to disk.
-  fn save_buffer(&mut self, connection: &mut Connection, buffer: &str) -> Result<()> {
-    self.kakoune.save_buffer(connection, buffer)?;
+  /// New buffer.
+  fn new_buffer(&mut self, connection: &mut Connection, buffer: String, language: String) -> Result<()> {
+    self.kakoune.new_buffer(connection, &buffer)?;
+    self.buffers.insert(buffer, Buffer::new(language, None, vec![]));
 
     Ok(())
   }
 
   /// Sets a buffer's language.
-  fn set_buffer_language(&mut self, buffer: String, language: String) -> Result<()> {
-    let content_file = self.kakoune.content_file(&buffer)?;
-    let parser = self.get_parser(&language)?;
-    let tree = parser.parse_file(&content_file)?;
+  fn set_buffer_language(&mut self, buffer: &str, language: String) -> Result<()> {
+    let Some(mut buffer) = self.buffers.get_mut(buffer) else {
+      bail!("buffer {buffer} doesn't exist");
+    };
 
-    self.buffers.insert(buffer, Buffer::new(language, tree));
+    buffer.language = language;
+    buffer.tree = None;
 
     Ok(())
   }
 
   /// Updates the buffer's syntax tree.
-  fn parse_buffer(&mut self, buffer: String) -> Result<()> {
+  fn parse_buffer(&mut self, buffer: String, timestamp: usize) -> Result<()> {
     // TODO(enricozb): can we do this without removing the entry?
     // We can by getting a mutable reference to self.parsers, and
     // doing something like Self::get_parser(&mut self.parsers).
-    let mut buf = self
-      .buffers
-      .remove(&buffer)
-      .ok_or(anyhow!("unknown buffer: {buffer}"))?;
+    let Some(mut buf) = self.buffers .remove(&buffer) else {
+      bail!("unknown buffer: {buffer}");
+    };
 
-    let content_file = self.kakoune.content_file(&buffer)?;
-    buf.tree = self.get_parser(&buf.language)?.parse_file(&content_file)?;
+    let content_file = self.kakoune.content_file(&buffer, timestamp)?;
+    let content = fs::read(&content_file)?;
+    fs::remove_file(content_file)?;
+
+    buf.content = content;
+    buf.tree = Some(self.get_parser(&buf.language)?.parse_file(&buf.content)?);
 
     self.buffers.insert(buffer, buf);
 
@@ -156,10 +160,14 @@ impl Server {
     Ok(parser)
   }
 
-  /// Highlight the provided buffer asynchronously.
-  fn highlight(&mut self, bufname: &str) -> Result<()> {
-    let content_file = self.kakoune.content_file(bufname)?;
+  /// Highlights a buffer at a timestamp.
+  fn highlight(&mut self, bufname: &str, timestamp: usize) -> Result<()> {
     let buffer = self.buffers.get(bufname).ok_or(anyhow!("unknown buffer: {bufname}"))?;
+
+    let Some(ref tree) = buffer.tree else {
+      bail!("buffer {bufname} not parsed");
+    };
+
     let highlighter = match self.highlighters.entry(buffer.language.clone()) {
       Entry::Occupied(o) => o.into_mut(),
       Entry::Vacant(v) => v.insert(Highlighter::new(&buffer.language).context("new highlighter")?),
@@ -167,7 +175,7 @@ impl Server {
 
     if let Some(faces) = self.config.faces(&buffer.language) {
       // TODO(enricozb): spawn async thread, or drop the connection.
-      let range_specs = highlighter.highlight(faces, &buffer.tree, &content_file)?;
+      let range_specs = highlighter.highlight(faces, &tree, &buffer.content)?;
 
       self.kakoune.highlight(bufname, &range_specs)?;
     }

@@ -1,4 +1,4 @@
-use std::{io::Write, net::Shutdown, os::unix::net::UnixStream};
+use std::{io::Write, os::unix::net::UnixStream};
 
 use anyhow::Result;
 
@@ -11,9 +11,12 @@ impl Connection {
     Self(stream)
   }
 
-  /// Sends a command to the kakoune instance.
-  pub fn send_command(&mut self, buffer: &str, command: &str) -> Result<()> {
-    writeln!(self.0, "evaluate-commands -buffer {buffer} %[ {command} ]")?;
+  /// Sends a synchronous command to the kakoune instance.
+  ///
+  /// This is not wrapped in an `evaluate-commands` call as kakoune will
+  /// execute the response with `evaluate-commands`.
+  pub fn send_sync_command(&mut self, command: &str) -> Result<()> {
+    writeln!(self.0, "{command}")?;
 
     Ok(())
   }
@@ -26,10 +29,5 @@ impl Connection {
     )?;
 
     Ok(())
-  }
-
-  /// Closes the connection
-  pub fn close(&self) -> Result<()> {
-    Ok(self.0.shutdown(Shutdown::Both)?)
   }
 }

@@ -1,5 +1,3 @@
-use std::{fs, path::Path};
-
 use anyhow::{anyhow, Result};
 use tree_sitter::{Parser as TSParser, Tree};
 
@@ -18,9 +16,7 @@ impl Parser {
   }
 
   /// Parses the file located at `content_file`.
-  pub fn parse_file(&mut self, content_file: &Path) -> Result<Tree> {
-    let content = fs::read(content_file)?;
-
+  pub fn parse_file(&mut self, content: &[u8]) -> Result<Tree> {
     self.0.parse(content, None).ok_or(anyhow!("parsing error"))
   }
 }
