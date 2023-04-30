@@ -24,7 +24,7 @@ hook buffer BufSetOption filetype=rust %{
 
 ### Configuration
 The configuration file currently only controls highlights, and maps tree-sitter captures to kakoune's faces.
-For example, from [configuration file](./config/config.toml):
+For example, from [`config/config.toml`](./config/config.toml):
 ```toml
 [language.rust.faces]
 attribute = "meta"
@@ -44,11 +44,13 @@ with the library instead of being configurable.
 
 ### Supported Languages
 Currently, only rust is supported. Other languages are easy to add though, adding them as a dependency
-in the [`Cargo.toml`](./Cargo.toml) file and matching against them in [`languages/mod.rs`](./src/languages/mod.rs)
+in the [`Cargo.toml`](./Cargo.toml) file and matching against them in [`languages/mod.rs`](./src/languages/mod.rs).
 
 ### TODO
 - [ ] add more languages
 - [ ] make the query files configurable
 - [ ] autoload the default config
+- [ ] add commands for querying the AST
+- [ ] add documentation for commands & requests
 
 [1]: https://tree-sitter.github.io/tree-sitter/
