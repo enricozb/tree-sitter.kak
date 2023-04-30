@@ -1,11 +1,12 @@
 # ────────────── initialization ──────────────
 declare-option str tree_sitter_socket
+declare-option -hidden str tree_sitter_timestamp
 
 # used for highlighting
 declare-option -hidden range-specs tree_sitter_ranges
 declare-option -hidden range-specs tree_sitter_ranges_spare
 
-define-command -override tree-sitter-enable -docstring "start the tree-sitter server" %{
+define-command -override tree-sitter-enable-buffer -docstring "start the tree-sitter server" %{
   evaluate-commands %sh{
     if [ -z "$kak_opt_tree_sitter_socket" ]; then
       printf \
@@ -14,22 +15,29 @@ define-command -override tree-sitter-enable -docstring "start the tree-sitter se
     fi
   }
 
+  # 1. send sync command to kak tree sitter to ask what buffer file to write to.
+  # 2. setup hooks to write constantly to that file.
+
   tree-sitter-buffer-new
 
   hook -group tree-sitter buffer BufSetOption filetype=.* %{
     tree-sitter-buffer-set-language
   }
 
-  hook -group tree-sitter buffer InsertIdle '' %{
-    tree-sitter-buffer-save
-    tree-sitter-buffer-parse
-    tree-sitter-buffer-highlight
-  }
+  hook -group tree-sitter buffer InsertIdle   .* tree-sitter-refresh
+  hook -group tree-sitter buffer NormalIdle   .* tree-sitter-refresh
+  hook -group tree-sitter buffer InsertChar   .* tree-sitter-refresh
+  hook -group tree-sitter buffer InsertDelete .* tree-sitter-refresh
+}
 
-  hook -group tree-sitter buffer ModeChange 'pop:insert:normal' %{
-    tree-sitter-buffer-save
-    tree-sitter-buffer-parse
-    tree-sitter-buffer-highlight
+define-command -override tree-sitter-refresh %{
+  evaluate-commands %sh{
+    if [ "$kak_timestamp" != "$kak_opt_tree_sitter_timestamp" ]; then
+      echo 'tree-sitter-buffer-save'
+      echo 'tree-sitter-buffer-parse'
+      echo 'tree-sitter-buffer-highlight'
+      echo 'set-option buffer tree_sitter_timestamp %val{timestamp}'
+    fi
   }
 }
 
@@ -48,7 +56,7 @@ define-command -override tree-sitter-buffer-new -docstring "create a new buffer"
 
 # ────────────── tree-sitter requests ──────────────
 define-command -override -hidden tree-sitter-request -docstring "send request to tree-sitter" -params 1 %{
-  evaluate-commands %sh{ echo "$1" | socat - $kak_opt_tree_sitter_socket }
+  nop %sh{ { echo "$1" | socat - UNIX-CONNECT:$kak_opt_tree_sitter_socket; } > /dev/null 2>&1 < /dev/null & }
 }
 
 define-command -override tree-sitter-reload %{

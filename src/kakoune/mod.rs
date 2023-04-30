@@ -62,7 +62,7 @@ impl Kakoune {
     let content_file = self.content_file(buffer)?;
 
     // TODO(enricozb): implement diffing between content files
-    connection.send_command(buffer, &format!("write -force {content_file:?}"))?;
+    self.send_command(Some(buffer), &format!("write -force {content_file:?}"))?;
 
     Ok(())
   }
@@ -117,10 +117,28 @@ impl Kakoune {
     let stdin = kak.stdin.as_mut().ok_or(anyhow!("no stdin"))?;
 
     if let Some(buffer) = buffer {
-      writeln!(stdin, "evaluate-commands -buffer {buffer} %[ {command} ]")?;
+      writeln!(stdin, "evaluate-commands -no-hooks -buffer {buffer} %[ {command} ]")?;
     } else {
-      writeln!(stdin, "evaluate-commands %[ {command} ]")?;
+      writeln!(stdin, "evaluate-commands -no-hooks %[ {command} ]")?;
     }
+
+    Ok(())
+  }
+
+  /// Log an error to the kakoune instance.
+  pub fn log_error(&mut self, message: &str) -> Result<()> {
+    let mut kak = Command::new("kak")
+      .arg("-p")
+      .arg(self.session.to_string())
+      .stdin(Stdio::piped())
+      .spawn()?;
+
+    let stdin = kak.stdin.as_mut().ok_or(anyhow!("no stdin"))?;
+
+    writeln!(
+      stdin,
+      "evaluate-commands -no-hooks %[ echo -debug %(kak-tree-sitter: {message}) ]"
+    )?;
 
     Ok(())
   }
