@@ -26,10 +26,9 @@ impl Config {
   }
 
   /// Reloads a `Config` from its file.
-  pub fn reload(&mut self) -> Result<()> {
+  pub fn reload(&mut self, file: PathBuf) -> Result<()> {
+    self.file = file;
     self.config = Server::from_file(&self.file)?;
-
-    println!("reloaded config from file: {:?}", self.file);
 
     Ok(())
   }

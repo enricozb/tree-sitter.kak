@@ -1,4 +1,8 @@
-use std::{io::Read, os::unix::net::UnixListener, path::Path};
+use std::{
+  io::Read,
+  os::unix::net::UnixListener,
+  path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use serde::Deserialize;
@@ -10,7 +14,7 @@ use crate::kakoune::connection::Connection;
 #[serde(rename_all = "snake_case")]
 pub enum Request {
   /// Reloads the config file.
-  ReloadConfig,
+  ReloadConfig { config: PathBuf },
 
   // TODO(enricozb): change references from `buffer` to `bufname`
   /// Creates a new buffer, Responds with path for kakoune to write buffer contents to.

@@ -59,6 +59,7 @@ impl Kakoune {
     let ranges: String = ranges.iter().map(|range| format!("'{range}' ")).collect();
 
     // TODO(enricozb): use the correct timestamp
+    // TODO(enricozb): consider chunking the ranges
     self.send_command(
       Some(buffer),
       &format!("set-option buffer tree_sitter_ranges %val{{timestamp}} {ranges}"),

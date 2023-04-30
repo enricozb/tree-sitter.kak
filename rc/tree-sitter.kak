@@ -12,7 +12,7 @@ declare-option -hidden str tree_sitter_timestamp
 declare-option -hidden range-specs tree_sitter_ranges
 declare-option -hidden range-specs tree_sitter_ranges_spare
 
-define-command -override tree-sitter-enable-buffer -docstring "start the tree-sitter server" %{
+define-command tree-sitter-enable-buffer -docstring "start the tree-sitter server" %{
   evaluate-commands %sh{
     if [ -z "$kak_opt_tree_sitter_socket" ]; then
       if [ -n "$kak_opt_tree_sitter_config" ]; then
@@ -48,7 +48,7 @@ define-command -override tree-sitter-enable-buffer -docstring "start the tree-si
   }
 }
 
-define-command -override tree-sitter-refresh %{
+define-command tree-sitter-refresh %{
   evaluate-commands -no-hooks %sh{
     if [ "$kak_timestamp" != "$kak_opt_tree_sitter_timestamp" ]; then
       echo 'write "%opt{tree_sitter_dir}/%val{timestamp}"'
@@ -61,21 +61,22 @@ define-command -override tree-sitter-refresh %{
 
 
 # ────────────── tree-sitter requests ──────────────
-define-command -override -hidden tree-sitter-sync-request -docstring "send sync request to tree-sitter" -params 1 %{
+define-command -hidden tree-sitter-sync-request -docstring "send sync request to tree-sitter" -params 1 %{
   evaluate-commands -no-hooks %sh{ echo "$1" | socat - UNIX-CONNECT:$kak_opt_tree_sitter_socket }
 }
 
-define-command -override -hidden tree-sitter-async-request -docstring "send async request to tree-sitter" -params 1 %{
+define-command -hidden tree-sitter-async-request -docstring "send async request to tree-sitter" -params 1 %{
   nop %sh{ { echo "$1" | socat - UNIX-CONNECT:$kak_opt_tree_sitter_socket; } > /dev/null 2>&1 < /dev/null & }
 }
 
-define-command -override tree-sitter-reload-config %{
+define-command tree-sitter-reload-config %{
   tree-sitter-async-request "
-    type = 'reload_config'
+    type   = 'reload_config'
+    config = '%opt{tree_sitter_config}'
   "
 }
 
-define-command -override tree-sitter-new-buffer %{
+define-command tree-sitter-new-buffer %{
   tree-sitter-sync-request "
     type     = 'new_buffer'
     buffer   = '%val{bufname}'
@@ -83,7 +84,7 @@ define-command -override tree-sitter-new-buffer %{
   "
 }
 
-define-command -override tree-sitter-set-language %{
+define-command tree-sitter-set-language %{
   tree-sitter-async-request "
     type     = 'set_language'
     buffer   = '%val{bufname}'
@@ -91,7 +92,7 @@ define-command -override tree-sitter-set-language %{
   "
 }
 
-define-command -override tree-sitter-parse-buffer %{
+define-command tree-sitter-parse-buffer %{
   tree-sitter-async-request "
     type      = 'parse_buffer'
     buffer    = '%val{bufname}'
@@ -99,7 +100,7 @@ define-command -override tree-sitter-parse-buffer %{
   "
 }
 
-define-command -override tree-sitter-highlight-buffer %{
+define-command tree-sitter-highlight-buffer %{
   tree-sitter-async-request "
     type      = 'highlight'
     buffer    = '%val{bufname}'

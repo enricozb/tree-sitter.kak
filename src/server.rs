@@ -92,8 +92,9 @@ impl Server {
   /// Handle a single request
   fn handle_request(&mut self, connection: &mut Connection, request: Request) -> Result<()> {
     match request {
-      Request::ReloadConfig => {
-        self.config.reload().context("reload")?;
+      Request::ReloadConfig { config } => {
+        self.kakoune.debug(&format!("reloading config from {config:?}"))?;
+        self.config.reload(config).context("reload")?;
       }
 
       Request::NewBuffer { buffer, language } => {
