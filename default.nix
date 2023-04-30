@@ -2,7 +2,7 @@
 
 pkgs.rustPlatform.buildRustPackage rec {
   pname = "kak-tree-sitter";
-  version = "0.1.1";
+  version = "0.1.2";
   src = ./.;
 
   cargoLock = { lockFile = ./Cargo.lock; };
