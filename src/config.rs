@@ -40,7 +40,7 @@ impl Config {
 }
 
 /// Server configuration.
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 struct Server {
   /// Language-specific configuration.
   language: HashMap<String, Language>,
@@ -52,7 +52,7 @@ impl Server {
     if file.exists() {
       Ok(toml::from_str(&fs::read_to_string(file)?)?)
     } else {
-      Ok(Self::default())
+      Ok(toml::from_str(include_str!("../config/config.toml"))?)
     }
   }
 }
