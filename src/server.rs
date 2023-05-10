@@ -45,7 +45,7 @@ struct Server {
 
 impl Server {
   /// Creates a new `Server`.
-  fn new(args: &Args) -> Result<Self> {
+  fn new(args: Args) -> Result<Self> {
     let tempdir = tempfile::tempdir()?;
     let socket = tempdir.path().join("socket");
 
@@ -201,10 +201,12 @@ impl Server {
 }
 
 /// Starts the server with the provided arguments.
-pub fn start(args: &Args) -> Result<()> {
+pub fn start(args: Args) -> Result<()> {
+  let daemonize = args.daemonize;
+
   let mut server = Server::new(args)?;
 
-  if args.daemonize {
+  if daemonize {
     let daemon = Daemonize::new()
       .stdout(File::create(server.tempdir.path().join("stdout"))?)
       .stderr(File::create(server.tempdir.path().join("stderr"))?)

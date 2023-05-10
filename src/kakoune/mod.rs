@@ -14,9 +14,8 @@ use crate::highlight::range::Specs as RangeSpecs;
 
 /// A struct for interacting with a kakoune instance.
 pub struct Kakoune {
-  // TODO(enricozb): change to usize (or is it a string?)
   /// The session id for the kakoune instance.
-  session: i32,
+  session: String,
 
   /// The directory for storing buffer contents.
   buffers_dir: PathBuf,
@@ -29,7 +28,7 @@ pub struct Kakoune {
 
 impl Kakoune {
   /// Creates a new `Kakoune`.
-  pub fn new(session: i32, buffers_dir: PathBuf) -> Result<Self> {
+  pub fn new(session: String, buffers_dir: PathBuf) -> Result<Self> {
     if !buffers_dir.exists() {
       fs::create_dir(&buffers_dir)?;
     }
@@ -92,7 +91,7 @@ impl Kakoune {
   pub fn send_command(&mut self, buffer: Option<&str>, command: &str) -> Result<()> {
     let mut kak = Command::new("kak")
       .arg("-p")
-      .arg(self.session.to_string())
+      .arg(&self.session)
       .stdin(Stdio::piped())
       .spawn()?;
 
@@ -111,7 +110,7 @@ impl Kakoune {
   pub fn debug(&mut self, message: &str) -> Result<()> {
     let mut kak = Command::new("kak")
       .arg("-p")
-      .arg(self.session.to_string())
+      .arg(&self.session)
       .stdin(Stdio::piped())
       .spawn()?;
 

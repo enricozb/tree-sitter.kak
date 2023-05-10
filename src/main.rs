@@ -17,7 +17,7 @@ pub struct Args {
   // TODO(enricozb): make this optional, and make commands appear on command-line
   /// The kakoune session id to send commands to.
   #[arg(short, long)]
-  session: i32,
+  session: String,
 
   /// Whether to run in the background.
   ///
@@ -31,7 +31,7 @@ pub struct Args {
 }
 
 fn main() -> Result<()> {
-  server::start(&Args::parse())?;
+  server::start(Args::parse())?;
 
   Ok(())
 }
