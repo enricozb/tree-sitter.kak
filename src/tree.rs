@@ -15,8 +15,8 @@ impl Parser {
     Ok(Self(parser))
   }
 
-  /// Parses the file located at `content_file`.
-  pub fn parse_file(&mut self, content: &[u8]) -> Result<Tree> {
+  /// Parses the `content`.
+  pub fn parse(&mut self, content: &[u8]) -> Result<Tree> {
     self.0.parse(content, None).ok_or(anyhow!("parsing error"))
   }
 }

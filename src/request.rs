@@ -1,13 +1,8 @@
-use std::{
-  io::Read,
-  os::unix::net::UnixListener,
-  path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
+use nix::{sys::stat::Mode, unistd};
 use serde::Deserialize;
-
-use crate::kakoune::connection::Connection;
 
 #[derive(Deserialize)]
 #[serde(tag = "type")]
@@ -24,35 +19,42 @@ pub enum Request {
   SetLanguage { buffer: String, language: String },
 
   /// Reconstructs the buffer's AST.
-  ParseBuffer { buffer: String, timestamp: usize },
+  ParseBuffer {
+    buffer: String,
+
+    #[serde(default)]
+    content: Vec<u8>,
+  },
 
   /// Highlights the currently parsed buffer asynchronously.
   Highlight { buffer: String },
 }
 
 pub struct Reader {
-  /// The listener to the socket.
-  socket: UnixListener,
+  /// The fifo for requests.
+  fifo_req: PathBuf,
+
+  /// The fifo for buffer contents.
+  fifo_buf: PathBuf,
 }
 
 impl Reader {
   /// Creates a new `Reader`.
-  pub fn new(socket_path: &Path) -> Result<Self> {
-    Ok(Self {
-      socket: UnixListener::bind(socket_path)?,
-    })
+  pub fn new(fifo_req: PathBuf, fifo_buf: PathBuf) -> Result<Self> {
+    unistd::mkfifo(&fifo_req, Mode::S_IRUSR | Mode::S_IWUSR)?;
+    unistd::mkfifo(&fifo_buf, Mode::S_IRUSR | Mode::S_IWUSR)?;
+
+    Ok(Self { fifo_req, fifo_buf })
   }
 
   /// Return the most recent request, blocks if no event is ready.
-  pub fn listen(&self) -> Result<(Connection, Request)> {
-    let mut stream = self.socket.accept()?.0;
+  pub fn read_request(&self) -> Result<Request> {
+    let mut request = toml::from_str(&fs::read_to_string(&self.fifo_req)?)?;
 
-    // TODO(enricozb): log this value
-    let mut data = String::new();
-    stream.read_to_string(&mut data)?;
+    if let Request::ParseBuffer { content, .. } = &mut request {
+      *content = fs::read(&self.fifo_buf)?;
+    }
 
-    println!("request: {data}");
-
-    Ok((Connection::new(stream), toml::from_str(&data)?))
+    Ok(request)
   }
 }

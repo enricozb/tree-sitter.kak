@@ -1,6 +1,6 @@
 use std::{
   collections::{hash_map::Entry, HashMap},
-  fs::{self, File},
+  fs::File,
   path::PathBuf,
 };
 
@@ -12,7 +12,7 @@ use crate::{
   buffer::Buffer,
   config::Config,
   highlight::Highlighter,
-  kakoune::{connection::Connection, Kakoune},
+  kakoune::Kakoune,
   request::{Reader as RequestReader, Request},
   tree::Parser,
   Args,
@@ -47,16 +47,14 @@ impl Server {
   /// Creates a new `Server`.
   fn new(args: Args) -> Result<Self> {
     let tempdir = tempfile::tempdir()?;
-    let socket = tempdir.path().join("socket");
 
-    if args.daemonize {
-      println!("{socket:?}");
-    }
+    let fifo_req = tempdir.path().join("fifo_req");
+    let fifo_buf = tempdir.path().join("fifo_buf");
 
     let mut server = Self {
       config: Config::from_file(args.config.clone())?,
-      requests: RequestReader::new(&socket)?,
-      kakoune: Kakoune::new(args.session, tempdir.path().join("buffers"))?,
+      requests: RequestReader::new(fifo_req.clone(), fifo_buf.clone())?,
+      kakoune: Kakoune::new(args.session)?,
       parsers: HashMap::new(),
       buffers: HashMap::new(),
       highlighters: HashMap::new(),
@@ -64,7 +62,7 @@ impl Server {
     };
 
     server.kakoune.debug(&format!("loading config {:?}", &args.config))?;
-    server.kakoune.send_socket(&socket).context("send socket")?;
+    server.kakoune.send_fifos(&fifo_req, &fifo_buf).context("send socket")?;
 
     Ok(server)
   }
@@ -81,16 +79,16 @@ impl Server {
     self.kakoune.debug("started")?;
 
     loop {
-      let (mut connection, request) = self.requests.listen().context("listen")?;
+      let request = self.requests.read_request().context("read_request")?;
 
-      if let Err(err) = self.handle_request(&mut connection, request) {
+      if let Err(err) = self.handle_request(request) {
         self.kakoune.debug(&format!("{err:?}")).context("log_error")?;
       }
     }
   }
 
   /// Handle a single request
-  fn handle_request(&mut self, connection: &mut Connection, request: Request) -> Result<()> {
+  fn handle_request(&mut self, request: Request) -> Result<()> {
     match request {
       Request::ReloadConfig { config } => {
         self.kakoune.debug(&format!("reloading config from {config:?}"))?;
@@ -98,15 +96,15 @@ impl Server {
       }
 
       Request::NewBuffer { buffer, language } => {
-        self.new_buffer(connection, buffer, language).context("new buffer")?;
+        self.new_buffer(buffer, language).context("new buffer")?;
       }
 
       Request::SetLanguage { buffer, language } => {
         self.set_buffer_language(&buffer, language).context("set language")?;
       }
 
-      Request::ParseBuffer { buffer, timestamp } => {
-        self.parse_buffer(buffer, timestamp).context("parse buffer")?;
+      Request::ParseBuffer { buffer, content } => {
+        self.parse_buffer(buffer, content).context("parse buffer")?;
       }
 
       Request::Highlight { buffer } => {
@@ -118,8 +116,7 @@ impl Server {
   }
 
   /// New buffer.
-  fn new_buffer(&mut self, connection: &mut Connection, buffer: String, language: String) -> Result<()> {
-    self.kakoune.new_buffer(connection, &buffer)?;
+  fn new_buffer(&mut self, buffer: String, language: String) -> Result<()> {
     self.buffers.insert(buffer, Buffer::new(language, None, vec![]));
 
     Ok(())
@@ -138,20 +135,18 @@ impl Server {
   }
 
   /// Updates the buffer's syntax tree.
-  fn parse_buffer(&mut self, buffer: String, timestamp: usize) -> Result<()> {
+  fn parse_buffer(&mut self, buffer: String, content: Vec<u8>) -> Result<()> {
     // TODO(enricozb): can we do this without removing the entry?
     // We can by getting a mutable reference to self.parsers, and
     // doing something like Self::get_parser(&mut self.parsers).
-    let Some(mut buf) = self.buffers .remove(&buffer) else {
+    let Some(mut buf) = self.buffers.remove(&buffer) else {
       bail!("unknown buffer: {buffer}");
     };
 
-    let content_file = self.kakoune.content_file(&buffer, timestamp)?;
-    let content = fs::read(&content_file)?;
-    fs::remove_file(content_file)?;
+    let tree = self.get_parser(&buf.language)?.parse(&content)?;
 
     buf.content = content;
-    buf.tree = Some(self.get_parser(&buf.language)?.parse_file(&buf.content)?);
+    buf.tree = Some(tree);
 
     self.buffers.insert(buffer, buf);
 
