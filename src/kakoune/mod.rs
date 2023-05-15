@@ -16,16 +16,17 @@ pub struct Kakoune {
 
 impl Kakoune {
   /// Creates a new `Kakoune`.
-  pub fn new(session: String) -> Result<Self> {
-    Ok(Self { session })
+  pub fn new(session: String) -> Self {
+    Self { session }
   }
 
-  /// Sends the fifo paths to the kakoune instance.
-  pub fn send_fifos(&mut self, fifo_req: &Path, fifo_buf: &Path) -> Result<()> {
-    self.send_command(None, &format!("set-option global tree_sitter_fifo_req {fifo_req:?}"))?;
-    self.send_command(None, &format!("set-option global tree_sitter_fifo_buf {fifo_buf:?}"))?;
-
-    Ok(())
+  /// Sends the commands to set the fifo paths to stdout.
+  ///
+  /// This does not use the usual command sending mechanism as this needs to happen
+  /// before the server daemonizes.
+  pub fn send_fifos(fifo_req: &Path, fifo_buf: &Path) {
+    println!("set-option global tree_sitter_fifo_req {fifo_req:?}");
+    println!("set-option global tree_sitter_fifo_buf {fifo_buf:?}");
   }
 
   /// Highlights a buffer at a timestamp.
@@ -73,7 +74,7 @@ impl Kakoune {
 
     writeln!(
       stdin,
-      "evaluate-commands -no-hooks %[ echo -debug %(kak-tree-sitter: {message}) ]"
+      "evaluate-commands -no-hooks %[ echo -debug %(kak-sitter: {message}) ]"
     )?;
 
     Ok(())

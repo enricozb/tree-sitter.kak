@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> { } }:
 
 pkgs.rustPlatform.buildRustPackage rec {
-  pname = "kak-tree-sitter";
+  pname = "kak-sitter";
   version = "0.1.10";
   src = ./.;
 

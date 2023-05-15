@@ -1,5 +1,5 @@
 [package]
-name = "kak-tree-sitter"
+name = "kak-sitter"
 description = "kakoune tree-sitter server"
 license = "CC0-1.0"
 version = "0.1.10"

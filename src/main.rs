@@ -26,7 +26,7 @@ pub struct Args {
   daemonize: bool,
 
   /// Read config from FILE.
-  #[arg(short, long, value_name = "FILE", default_value = "/etc/kak-tree-sitter/config.toml")]
+  #[arg(short, long, value_name = "FILE", default_value = "/etc/kak-sitter/config.toml")]
   config: PathBuf,
 }
 

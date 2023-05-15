@@ -20,8 +20,8 @@ Then, in buffers where you want to use `tree-sitter.kak`, call `tree-sitter-enab
 if you want to enable highlighting, you should remove the default highlighters. For example, for rust:
 ```kak
 hook buffer BufSetOption filetype=rust %{
-  tree-sitter-enable-buffer
   rmhl window/rust
+  tree-sitter-enable-buffer
 }
 ```
 
@@ -55,5 +55,8 @@ in the [`Cargo.toml`](./Cargo.toml) file and matching against them in [`language
 - [ ] autoload the default config
 - [ ] add commands for querying the AST
 - [ ] add documentation for commands & requests
+- [ ] remove `new_buffer` and `set_language` commands, and send language along with
+      buffer information for `parse_buffer`. if the buffer doesn't exist, it should
+      just be created. this will simplify the request logic and make it more robust.
 
 [1]: https://tree-sitter.github.io/tree-sitter/

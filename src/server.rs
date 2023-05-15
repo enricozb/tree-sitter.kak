@@ -51,10 +51,12 @@ impl Server {
     let fifo_req = tempdir.path().join("fifo_req");
     let fifo_buf = tempdir.path().join("fifo_buf");
 
+    Kakoune::send_fifos(&fifo_req, &fifo_buf);
+
     let mut server = Self {
       config: Config::from_file(args.config.clone())?,
-      requests: RequestReader::new(fifo_req.clone(), fifo_buf.clone())?,
-      kakoune: Kakoune::new(args.session)?,
+      requests: RequestReader::new(fifo_req, fifo_buf)?,
+      kakoune: Kakoune::new(args.session),
       parsers: HashMap::new(),
       buffers: HashMap::new(),
       highlighters: HashMap::new(),
@@ -62,7 +64,6 @@ impl Server {
     };
 
     server.kakoune.debug(&format!("loading config {:?}", &args.config))?;
-    server.kakoune.send_fifos(&fifo_req, &fifo_buf).context("send socket")?;
 
     Ok(server)
   }
@@ -96,7 +97,7 @@ impl Server {
       }
 
       Request::NewBuffer { buffer, language } => {
-        self.new_buffer(buffer, language).context("new buffer")?;
+        self.new_buffer(buffer, language);
       }
 
       Request::SetLanguage { buffer, language } => {
@@ -116,10 +117,8 @@ impl Server {
   }
 
   /// New buffer.
-  fn new_buffer(&mut self, buffer: String, language: String) -> Result<()> {
+  fn new_buffer(&mut self, buffer: String, language: String) {
     self.buffers.insert(buffer, Buffer::new(language, None, vec![]));
-
-    Ok(())
   }
 
   /// Sets a buffer's language.
