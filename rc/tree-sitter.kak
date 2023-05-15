@@ -17,14 +17,15 @@ define-command tree-sitter-enable-buffer -docstring "start the tree-sitter serve
         config="--config $kak_opt_tree_sitter_config"
       fi
 
-      kak-tree-sitter --daemonize --session $kak_session $config
+      # this will print out commands to set the fifo_req and fifo_buf options
+      ./target/release/kak-sitter --daemonize --session $kak_session $config
     fi
   }
 
   # 0. remove any extant hooks
   remove-hooks buffer tree-sitter
 
-  # 1. send sync command to kak tree sitter to ask what buffer file to write to.
+  # 1. send command to server setting langauge and buffer name.
   tree-sitter-new-buffer
 
   # 2. setup hooks to write constantly to that file.
@@ -61,8 +62,8 @@ define-command -hidden tree-sitter-request -docstring "send request to tree-sitt
   }
 }
 
-define-command -hidden tree-sitter-write-buffer -docstring "send buffer contents to tree-sitter" -params 1 %{
-  write %opt{kak_opt_tree_sitter_fifo_buf}
+define-command -hidden tree-sitter-write-buffer -docstring "send buffer contents to tree-sitter" %{
+  write %opt{tree_sitter_fifo_buf}
 }
 
 define-command tree-sitter-reload-config %{
@@ -81,7 +82,7 @@ define-command tree-sitter-new-buffer %{
 }
 
 define-command tree-sitter-set-language %{
-  tree-sitter-async-request "
+  tree-sitter-request "
     type     = 'set_language'
     buffer   = '%val{bufname}'
     language = '%opt{filetype}'
@@ -98,7 +99,7 @@ define-command tree-sitter-parse-buffer %{
 }
 
 define-command tree-sitter-highlight-buffer %{
-  tree-sitter-async-request "
+  tree-sitter-request "
     type      = 'highlight'
     buffer    = '%val{bufname}'
   "
