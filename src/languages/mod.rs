@@ -8,7 +8,7 @@ pub struct Language {
   /// The tree sitter `Language`.
   language: TSLanguage,
 
-  /// Queries for highlighting
+  /// Queries for highlighting.
   highlight_query: Option<TSQuery>,
 }
 
